@@ -24,10 +24,11 @@
 ### [FRONTEND] Dashboard & Interfaccia Utente
 - [x] Header moderno con badge live status, notizia Price Cap e ultimo aggiornamento MIMIT
 - [x] Summary KPI Cards (Distributori < 2€, Prezzo Min Benzina/Diesel, Medie e minimi regionali)
-- [x] Filtro territoriale dedicato **Penisola Sorrentina** (Massa Lubrense, Sorrento, Sant'Agnello, Piano di Sorrento, Meta, Vico Equense)
+- [x] Standardizzazione province reali della Campania (NA, SA, CE, AV, BN) e rimozione pseudo-provincia Penisola Sorrentina dal selettore
+- [x] Perfezionamento conteggio Price Cap < 2.00 € (applicato rigorosamente a Benzina e Gasolio, escludendo GPL e Metano che sono naturalmente a basso costo)
 - [x] Default "Solo Self-service" attivato all'avvio
 - [x] Componente **Legenda** interattiva per simboli, listini multipli e colori brand
-- [x] Ricerca intelligente (boundary match per "Meta", feedback esplicito con pulsante di reset filtri)
+- [x] Ricerca intelligente senza falsi positivi (boundary match per "Meta", esclusione da "Metanauto" in operatore e nome, feedback esplicito con pulsante di reset filtri)
 - [x] Vista Card Impianto (dettaglio prezzi, bandiera, indicatore distanza, navigatore Google Maps)
 - [x] Vista Tabellare comparativa / classifica
 - [x] Mappa interattiva Leaflet con pin personalizzati per brand e badge prezzo sotto 2€

@@ -8,8 +8,8 @@ Progettata per essere ospitata gratuitamente su [Vercel](https://vercel.com).
 
 ## 🌟 Caratteristiche Principali
 
-- 🎯 **Esclusivo per la Campania & Penisola Sorrentina:** Copertura capillare delle 5 province campane (**Napoli**, **Salerno**, **Caserta**, **Avellino**, **Benevento**) con filtro dedicato per la **Penisola Sorrentina** (Massa Lubrense, Sorrento, Sant'Agnello, Piano di Sorrento, Meta, Vico Equense).
-- 💰 **Monitor Price Cap (< 2.00 €):** Evidenzia immediatamente i distributori che rispettano il tetto al prezzo di Benzina e Gasolio, oltre a GPL e Metano ultra-convenienti.
+- 🎯 **Esclusivo per la Campania:** Copertura capillare delle 5 province campane (**Napoli**, **Salerno**, **Caserta**, **Avellino**, **Benevento**), con ricerca toponomastica avanzata e coordinate GPS verificate per tutti i comuni (inclusi Sorrento, Massa Lubrense, Sant'Agnello, Piano di Sorrento, Meta, Vico Equense).
+- 💰 **Monitor Price Cap (< 2.00 €):** Evidenzia con precisione i distributori che applicano lo sconto e il tetto a Benzina e Gasolio, escludendo GPL e Metano per non falsare le statistiche.
 - ⚡ **Dati Ufficiali MIMIT in Tempo Reale:** Ingestion diretta dei flussi aperti del Ministero delle Imprese e del Made in Italy (Osservaprezzi Carburanti).
 - ⏱️ **Cache Intelligente (TTL 15 min):** Prestazioni istantanee conformi alle specifiche di rate limiting e risparmio banda.
 - 🗺️ **Mappa Interattiva OpenStreetMap:** Visualizza tutti gli impianti geolocalizzati sulla mappa con Leaflet e pin personalizzati per brand e prezzo.

@@ -30,7 +30,6 @@ interface FiltersProps {
 
 const PROVINCES = [
   { code: 'all', label: 'Tutta la Campania' },
-  { code: 'PENISOLA_SORRENTINA', label: '🌊 Penisola Sorrentina (Sorrento, Vico E., Meta...)' },
   { code: 'NA', label: 'Napoli (NA)' },
   { code: 'SA', label: 'Salerno (SA)' },
   { code: 'CE', label: 'Caserta (CE)' },

@@ -25,14 +25,23 @@ function matchesSearchQuery(s: GasStation, query: string): boolean {
   if (s.address.toLowerCase().includes(q)) return true;
 
   // Operator match
-  if (s.operator.toLowerCase().includes(q)) return true;
+  // If query is short (<= 4 chars like "meta"), do word boundary match
+  const op = s.operator.toLowerCase();
+  if (q.length <= 4 && q !== 'gpl' && q !== 'cng') {
+    const opWords = op.split(/[\s\-_/.,'"]+/);
+    if (opWords.some((w) => w === q || (w.startsWith(q) && !w.startsWith('metan')))) {
+      return true;
+    }
+  } else {
+    if (op.includes(q)) return true;
+  }
 
   // Name match:
   // If query is short (<= 4 chars like "meta"), do word boundary match
   // so "meta" doesn't accidentally match "metano" or "metanauto"!
   const name = s.name.toLowerCase();
   if (q.length <= 4 && q !== 'gpl' && q !== 'cng') {
-    const nameWords = name.split(/[\s\-_/.,]+/);
+    const nameWords = name.split(/[\s\-_/.,'"]+/);
     if (nameWords.some((w) => w === q || (w.startsWith(q) && !w.startsWith('metan')))) {
       return true;
     }
@@ -89,36 +98,41 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by Fuel Type, Self-Service and Under 2 Euro condition
-    filtered = filtered
-      .map((station) => {
-        let matchingPrices = station.prices;
+    const mappedStations: GasStation[] = [];
+    for (const station of filtered) {
+      let matchingPrices = station.prices;
 
-        if (carburante !== 'all') {
-          matchingPrices = matchingPrices.filter((p) => p.fuelType === carburante);
-        }
+      if (carburante !== 'all') {
+        matchingPrices = matchingPrices.filter((p) => p.fuelType === carburante);
+      }
 
-        if (onlySelf) {
-          matchingPrices = matchingPrices.filter((p) => p.isSelf);
-        }
+      if (onlySelf) {
+        matchingPrices = matchingPrices.filter((p) => p.isSelf);
+      }
 
-        if (onlyUnder2) {
-          matchingPrices = matchingPrices.filter((p) => p.price < 2.00);
-        }
+      if (onlyUnder2) {
+        matchingPrices = matchingPrices.filter((p) => p.price < 2.00);
+      }
 
-        if (matchingPrices.length === 0) {
-          return null;
-        }
+      if (matchingPrices.length === 0) {
+        continue;
+      }
 
-        // Recalculate minPrice for this filtered view
-        const validMin = Math.min(...matchingPrices.map((p) => p.price));
+      const validMin = Math.min(...matchingPrices.map((p) => p.price));
+      const hasUnder2 = matchingPrices.some((p) => p.isUnder2Euro);
+      const bestUnder2 = matchingPrices
+        .filter((p) => p.isUnder2Euro)
+        .sort((a, b) => a.price - b.price)[0];
 
-        return {
-          ...station,
-          prices: matchingPrices,
-          minPrice: validMin < 999 ? validMin : station.minPrice,
-        };
-      })
-      .filter((s): s is GasStation => s !== null);
+      mappedStations.push({
+        ...station,
+        prices: matchingPrices,
+        minPrice: validMin < 999 ? validMin : station.minPrice,
+        hasUnder2Euro: hasUnder2,
+        bestPriceUnder2: bestUnder2 || undefined,
+      });
+    }
+    filtered = mappedStations;
 
     // Calculate feedback for search if results are empty because of price / self filter
     let searchFeedback: { matchingWithoutPriceCapCount: number; minPriceFound?: number } | undefined = undefined;

@@ -39,4 +39,13 @@ L'applicazione web consente agli automobilisti e cittadini della **Campania** di
    - `user.name`: `mich-de`
    - `user.email`: `mic.deangelis@gmail.com`
 
+7. **Standardizzazione Province & Precisione Price Cap (< 2.00 €):**
+   - Rimosso il selettore pseudo-provincia "Penisola Sorrentina" dai filtri provinciali: la ricerca per comuni (Sorrento, Massa Lubrense, Sant'Agnello, Piano di Sorrento, Meta, Vico Equense) avviene in modo immediato tramite la barra di ricerca rapida o selezionando la provincia reale di Napoli (`NA`).
+   - Esclusione GPL e Metano dalla marcatura `isUnder2Euro`: l'accordo sul Price Cap riguarda specificamente Benzina (tetto 1.990 €/l) e Gasolio. GPL (~0.80 €) e Metano (~1.50 €) non innescano più ingannevolmente il badge `PRICE CAP < 2€` né falsano il conteggio delle stazioni con price cap.
+   - Nella costiera le pompe con Benzina sotto i 2 euro sono esattamente 3:
+     1. `48998` Esso - Via Reola (Massa Lubrense): Benzina Self 1.989 €
+     2. `44201` Agip Eni 08011 (Massa Lubrense): Benzina Self 1.990 €
+     3. `19655` Stazione Ranzo Mario (Sant'Agnello): Benzina Self 1.990 €
+   - Perfezionata la ricerca "Meta": eliminati i falsi positivi da "METANAUTO" (Atena Lucana/Padula) su nome e operatore, isolando con precisione i 2 impianti di Meta (UNOIL Meta e Tiber).
+
 

@@ -400,7 +400,7 @@ async function fetchFromOsservaprezziApi(): Promise<{
           if (fuelType === 'Metano' && (priceVal < 0.70 || priceVal > 3.00)) continue;
 
           const isSelf = p.isSelf === true || p.isSelf === 1 || p.isSelf === '1' || p.service === 'self';
-          const isUnder2Euro = priceVal < 2.00;
+          const isUnder2Euro = (fuelType === 'Benzina' || fuelType === 'Gasolio') && priceVal < 2.00;
 
           prices.push({
             fuelType,
@@ -572,7 +572,7 @@ async function fetchFromMimitCsvFallback(): Promise<{
     if (fuelType === 'GPL' && (priceVal < 0.40 || priceVal > 1.50)) continue;
     if (fuelType === 'Metano' && (priceVal < 0.70 || priceVal > 3.00)) continue;
     const isSelf = isSelfStr.trim() === '1';
-    const isUnder2Euro = priceVal < 2.00;
+    const isUnder2Euro = (fuelType === 'Benzina' || fuelType === 'Gasolio') && priceVal < 2.00;
 
     const fuelPrice: FuelPrice = {
       fuelType,

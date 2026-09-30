@@ -23,7 +23,6 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvinc
 
   const getDisplayName = (code: string) => {
     if (code === 'all') return 'Campania';
-    if (code === 'PENISOLA_SORRENTINA') return 'Penisola Sorrentina';
     return `Provincia ${code}`;
   };
 
