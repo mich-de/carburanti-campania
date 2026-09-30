@@ -140,8 +140,8 @@ export const StationCard: React.FC<StationCardProps> = ({ station, selectedFuel 
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-700 truncate">
-                    {p.fuelType}
+                  <span className="text-xs font-bold text-slate-800 truncate" title={p.rawFuelName}>
+                    {p.rawFuelName}
                   </span>
                   <span
                     className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${

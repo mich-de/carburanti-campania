@@ -92,7 +92,7 @@ export const StationTable: React.FC<StationTableProps> = ({ stations, selectedFu
                               : 'bg-slate-100 text-slate-700 border-slate-200'
                           }`}
                         >
-                          {p.fuelType} ({p.isSelf ? 'Self' : 'Serv'}): <strong>{p.price.toFixed(3)}€</strong>
+                          {p.rawFuelName} ({p.isSelf ? 'Self' : 'Serv'}): <strong>{p.price.toFixed(3)}€</strong>
                         </span>
                       ))}
                     </div>

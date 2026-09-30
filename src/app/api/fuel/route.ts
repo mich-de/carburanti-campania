@@ -34,14 +34,15 @@ export async function GET(request: NextRequest) {
       filtered = filtered.filter((s) => s.brand.toLowerCase().includes(bUpper));
     }
 
-    // Filter by Search Query (name, address, city)
+    // Filter by Search Query (name, address, city, operator, mimitId)
     if (search) {
       filtered = filtered.filter(
         (s) =>
           s.name.toLowerCase().includes(search) ||
           s.city.toLowerCase().includes(search) ||
           s.address.toLowerCase().includes(search) ||
-          s.operator.toLowerCase().includes(search)
+          s.operator.toLowerCase().includes(search) ||
+          (s.mimitId && s.mimitId.includes(search))
       );
     }
 

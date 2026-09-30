@@ -107,7 +107,7 @@ export const StationMap: React.FC<StationMapProps> = ({ stations, selectedProvin
             .map(
               (p) => `
               <div style="display:flex; justify-content:space-between; margin-top:2px; font-size:11px;">
-                <span>${p.fuelType} (${p.isSelf ? 'Self' : 'Serv'}):</span>
+                <span>${p.rawFuelName} (${p.isSelf ? 'Self' : 'Serv'}):</span>
                 <strong style="color:${p.isUnder2Euro ? '#059669' : '#0f172a'}">
                   ${p.price.toFixed(3)} €
                 </strong>
