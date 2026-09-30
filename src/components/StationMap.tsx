@@ -6,6 +6,7 @@ import { GasStation } from '../types/fuel';
 interface StationMapProps {
   stations: GasStation[];
   selectedProvince: string;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 const PROVINCE_CENTERS: Record<string, [number, number, number]> = {
@@ -17,7 +18,7 @@ const PROVINCE_CENTERS: Record<string, [number, number, number]> = {
   BN: [41.13, 14.78, 11],
 };
 
-export const StationMap: React.FC<StationMapProps> = ({ stations, selectedProvince }) => {
+export const StationMap: React.FC<StationMapProps> = ({ stations, selectedProvince, userLocation }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersLayerRef = useRef<any>(null);
@@ -60,6 +61,19 @@ export const StationMap: React.FC<StationMapProps> = ({ stations, selectedProvin
       // Refresh markers
       if (markersLayerRef.current) {
         markersLayerRef.current.clearLayers();
+
+        // Render user location marker if GPS is active
+        if (userLocation) {
+          const userIcon = L.divIcon({
+            className: 'user-pin-icon',
+            html: '<div style="width:16px;height:16px;border-radius:50%;background:#0284c7;border:3px solid #ffffff;box-shadow:0 0 10px rgba(2,132,199,0.8);"></div>',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
+          });
+          const userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon });
+          userMarker.bindPopup('<strong style="font-size:12px;color:#0284c7;">📍 La tua posizione GPS</strong>');
+          markersLayerRef.current.addLayer(userMarker);
+        }
 
         // Limit rendering to top 300 to maintain smooth 60fps performance on mobile
         const displayStations = stations.slice(0, 300);
@@ -132,7 +146,7 @@ export const StationMap: React.FC<StationMapProps> = ({ stations, selectedProvin
     return () => {
       isMounted = false;
     };
-  }, [stations, selectedProvince]);
+  }, [stations, selectedProvince, userLocation]);
 
   return (
     <div className="relative w-full h-[520px] rounded-xl overflow-hidden border border-slate-200 shadow-xs bg-slate-100">

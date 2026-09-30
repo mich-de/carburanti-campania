@@ -124,9 +124,11 @@ export async function fetchCampaniaFuelData(forceRefresh = false): Promise<{
 
       // Follow ID convention from testo.txt: gpl_mimit_* for official source
       const id = `gpl_mimit_${idRaw.trim()}`;
+      const mimitId = idRaw.trim();
 
       stationMap.set(idRaw.trim(), {
         id,
+        mimitId,
         name: name ? name.trim() : `Distributore ${idRaw}`,
         operator: operator ? operator.trim() : '',
         brand: cleanBrand(brand),
@@ -324,6 +326,7 @@ function getFallbackCampaniaData(): { stations: GasStation[]; stats: FuelStats }
   const seedStations: GasStation[] = [
     {
       id: 'gpl_mimit_1001',
+      mimitId: '1001',
       name: 'Eni Station Napoli Est',
       operator: 'ENIMOOV S.P.A.',
       brand: 'Eni',
@@ -343,6 +346,7 @@ function getFallbackCampaniaData(): { stations: GasStation[]; stats: FuelStats }
     },
     {
       id: 'gpl_mimit_1002',
+      mimitId: '1002',
       name: 'IP Gruppo API Salerno Centro',
       operator: 'DISTRIBUTORI CAMPANIA SRL',
       brand: 'IP',
@@ -361,6 +365,7 @@ function getFallbackCampaniaData(): { stations: GasStation[]; stats: FuelStats }
     },
     {
       id: 'gpl_mimit_1003',
+      mimitId: '1003',
       name: 'Q8 Caserta Appia',
       operator: 'KUWAIT PETROLEUM ITALIA',
       brand: 'Q8',

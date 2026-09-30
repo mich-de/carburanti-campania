@@ -56,6 +56,11 @@ export const StationTable: React.FC<StationTableProps> = ({ stations, selectedFu
                     <div className="font-semibold text-slate-800 flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{st.city}</span>
+                      {typeof st.distanceKm === 'number' && (
+                        <span className="text-[10px] text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.2 rounded font-bold ml-1">
+                          {st.distanceKm < 1 ? `${Math.round(st.distanceKm * 1000)}m` : `${st.distanceKm.toFixed(1)}km`}
+                        </span>
+                      )}
                     </div>
                     <div className="text-[11px] text-slate-500 font-bold">
                       Provincia di {st.province}

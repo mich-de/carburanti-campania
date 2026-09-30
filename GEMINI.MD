@@ -14,6 +14,9 @@ L'applicazione web consente agli automobilisti e cittadini della **Campania** di
 
 2. **Fonti Dati e Compliance Rete:**
    - Dati ufficiali: Open Data MIMIT (`anagrafica_impianti_attivi.csv` e `prezzo_alle_8.csv`).
+   - Portale ministeriale di verifica: `carburanti.mise.gov.it/ospzSearch/zona` (Osservaprezzi MIMIT).
+   - Iniziativa Price Cap documentata da *Il Sole 24 Ore* e *inSella* ("Il giorno della benzina sotto i 2 euro"): tetto a 1,990 €/l benzina (self e servito) e 2,190 €/l gasolio.
+   - Geolocalizzazione: calcolo distanza locale via formula Haversine (`distanceKm`), nessun tracciamento verso server terzi.
    - Mappe: OpenStreetMap standard tiles via Leaflet.
    - Nessuna chiamata di terze parti non autorizzata, pieno rispetto delle policy di rete indicate in `testo.txt`.
 

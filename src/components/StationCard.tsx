@@ -103,12 +103,20 @@ export const StationCard: React.FC<StationCardProps> = ({ station, selectedFuel 
           {station.name}
         </h3>
 
-        <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
-          <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-          <span className="truncate">
-            {station.address ? `${station.address}, ` : ''}
-            <strong>{station.city}</strong> ({station.province})
-          </span>
+        <div className="flex items-center justify-between gap-1 text-xs text-slate-500 mt-1">
+          <div className="flex items-center gap-1 truncate">
+            <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+            <span className="truncate">
+              {station.address ? `${station.address}, ` : ''}
+              <strong>{station.city}</strong> ({station.province})
+            </span>
+          </div>
+
+          {typeof station.distanceKm === 'number' && (
+            <span className="shrink-0 inline-flex items-center gap-0.5 text-[11px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+              📍 {station.distanceKm < 1 ? `${Math.round(station.distanceKm * 1000)}m` : `${station.distanceKm.toFixed(1)} km`}
+            </span>
+          )}
         </div>
       </div>
 
@@ -174,9 +182,14 @@ export const StationCard: React.FC<StationCardProps> = ({ station, selectedFuel 
 
       {/* Card Footer: Metadata and GPS link */}
       <div className="p-3 border-t border-slate-100 bg-white flex items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-1 text-[11px] text-slate-400">
-          <Clock className="w-3 h-3 shrink-0" />
-          <span className="truncate">{lastUpdate ? `MIMIT: ${lastUpdate}` : 'Aggiornato'}</span>
+        <div className="flex flex-col text-[11px] text-slate-400">
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3 shrink-0" />
+            <span className="truncate">{lastUpdate ? `MIMIT: ${lastUpdate}` : 'Aggiornato'}</span>
+          </div>
+          <span className="text-[10px] text-slate-400 font-mono">
+            MIMIT ID: {station.mimitId}
+          </span>
         </div>
 
         <a

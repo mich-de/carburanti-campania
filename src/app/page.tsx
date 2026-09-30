@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { GasStation, FuelStats, FuelApiResponse } from '@/types/fuel';
 import { Header } from '@/components/Header';
 import { NewsBanner } from '@/components/NewsBanner';
@@ -11,6 +11,20 @@ import { StationTable } from '@/components/StationTable';
 import { StationMap } from '@/components/StationMap';
 import { Footer } from '@/components/Footer';
 import { AlertCircle, Loader2, Sparkles, FilterX } from 'lucide-react';
+
+function computeHaversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 export default function HomePage() {
   const [stations, setStations] = useState<GasStation[]>([]);
@@ -26,6 +40,11 @@ export default function HomePage() {
   const [onlySelf, setOnlySelf] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+
+  // GPS Geolocation States (Recommended by inSella article)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [sortByDistance, setSortByDistance] = useState<boolean>(false);
 
   // Pagination for grid
   const [visibleCount, setVisibleCount] = useState<number>(36);
@@ -81,6 +100,63 @@ export default function HomePage() {
     setVisibleCount(36);
   }, [selectedProvince, selectedFuel, selectedBrand, onlyUnder2, onlySelf, searchQuery]);
 
+  // Handle GPS location request
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      alert('La geolocalizzazione non è supportata dal tuo browser.');
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
+        setUserLocation(coords);
+        setSortByDistance(true);
+        setIsLocating(false);
+      },
+      (err) => {
+        console.warn('Geolocation error:', err);
+        setIsLocating(false);
+        alert('Impossibile rilevare la posizione GPS. Verifica i permessi del browser.');
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
+  // Enhance stations with distance and sort accordingly
+  const processedStations = useMemo(() => {
+    let list = [...stations];
+
+    if (userLocation) {
+      list = list.map((st) => {
+        if (st.latitude && st.longitude) {
+          const dist = computeHaversineKm(
+            userLocation.lat,
+            userLocation.lng,
+            st.latitude,
+            st.longitude
+          );
+          return { ...st, distanceKm: dist };
+        }
+        return st;
+      });
+
+      if (sortByDistance) {
+        list.sort((a, b) => {
+          const distA = typeof a.distanceKm === 'number' ? a.distanceKm : 9999;
+          const distB = typeof b.distanceKm === 'number' ? b.distanceKm : 9999;
+          return distA - distB;
+        });
+      }
+    }
+
+    return list;
+  }, [stations, userLocation, sortByDistance]);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       {/* 1. Header */}
@@ -91,7 +167,7 @@ export default function HomePage() {
         totalUnder2={stats?.stationsUnder2Euro || 0}
       />
 
-      {/* 2. News Banner referring to Il Sole 24 Ore */}
+      {/* 2. News Banner referring to Il Sole 24 Ore, inSella and MIMIT */}
       <NewsBanner />
 
       {/* Main Content Area */}
@@ -115,7 +191,12 @@ export default function HomePage() {
           onSearchChange={setSearchQuery}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          totalResults={stations.length}
+          totalResults={processedStations.length}
+          userLocation={userLocation}
+          onLocateMe={handleLocateMe}
+          isLocating={isLocating}
+          sortByDistance={sortByDistance}
+          onToggleSortByDistance={setSortByDistance}
         />
 
         {/* Error Notification */}
@@ -135,7 +216,7 @@ export default function HomePage() {
         )}
 
         {/* Loading Skeleton */}
-        {isLoading && stations.length === 0 && (
+        {isLoading && processedStations.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-slate-500 space-y-3">
             <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
             <p className="text-sm font-medium">Scaricamento e analisi dati MIMIT per la Campania...</p>
@@ -143,7 +224,7 @@ export default function HomePage() {
         )}
 
         {/* No Results Fallback */}
-        {!isLoading && stations.length === 0 && (
+        {!isLoading && processedStations.length === 0 && (
           <div className="bg-white rounded-xl border border-slate-200 p-12 text-center max-w-lg mx-auto my-8">
             <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
               <FilterX className="w-6 h-6" />
@@ -162,6 +243,7 @@ export default function HomePage() {
                 setSearchQuery('');
                 setOnlyUnder2(false);
                 setOnlySelf(false);
+                setSortByDistance(false);
               }}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold text-xs transition hover:bg-emerald-700"
             >
@@ -172,12 +254,12 @@ export default function HomePage() {
         )}
 
         {/* Display Content according to viewMode */}
-        {stations.length > 0 && (
+        {processedStations.length > 0 && (
           <>
             {viewMode === 'grid' && (
               <div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {stations.slice(0, visibleCount).map((station) => (
+                  {processedStations.slice(0, visibleCount).map((station) => (
                     <StationCard
                       key={station.id}
                       station={station}
@@ -186,13 +268,13 @@ export default function HomePage() {
                   ))}
                 </div>
 
-                {visibleCount < stations.length && (
+                {visibleCount < processedStations.length && (
                   <div className="text-center mt-8">
                     <button
                       onClick={() => setVisibleCount((prev) => prev + 36)}
                       className="px-6 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 font-bold text-xs sm:text-sm text-slate-700 shadow-xs hover:shadow transition"
                     >
-                      Mostra altri 36 impianti (rimanenti {stations.length - visibleCount})
+                      Mostra altri 36 impianti (rimanenti {processedStations.length - visibleCount})
                     </button>
                   </div>
                 )}
@@ -200,11 +282,15 @@ export default function HomePage() {
             )}
 
             {viewMode === 'table' && (
-              <StationTable stations={stations} selectedFuel={selectedFuel} />
+              <StationTable stations={processedStations} selectedFuel={selectedFuel} />
             )}
 
             {viewMode === 'map' && (
-              <StationMap stations={stations} selectedProvince={selectedProvince} />
+              <StationMap
+                stations={processedStations}
+                selectedProvince={selectedProvince}
+                userLocation={userLocation}
+              />
             )}
           </>
         )}

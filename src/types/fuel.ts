@@ -10,7 +10,8 @@ export interface FuelPrice {
 }
 
 export interface GasStation {
-  id: string; // e.g. "gpl_mimit_12345" or "12345"
+  id: string; // e.g. "gpl_mimit_12345"
+  mimitId: string; // Official numeric ID e.g. "12345"
   name: string;
   operator: string;
   brand: string;
@@ -24,6 +25,7 @@ export interface GasStation {
   minPrice: number;
   hasUnder2Euro: boolean;
   bestPriceUnder2?: FuelPrice;
+  distanceKm?: number;
 }
 
 export interface FuelStats {
