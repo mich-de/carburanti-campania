@@ -290,47 +290,59 @@ export const Filters: React.FC<FiltersProps> = ({
           </select>
         </div>
 
-        {/* 3 Dedicated Key Toggles: Sotto 2€, Price Cap, Self-Service */}
+        {/* 3 Dedicated Key Toggles: Accordo Price Cap (Default), Tutti < 2€, Self-Service (Default) */}
         <div className="flex flex-col justify-center gap-1.5 bg-slate-50/80 p-2.5 rounded-lg border border-slate-200/70">
-          {/* Toggle 1: Prezzo < 2.00 € (Chiunque comunichi un prezzo reale < 2€) */}
-          <label className="relative flex items-center justify-between gap-2 cursor-pointer select-none">
-            <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
-              <Tag className="w-3 h-3 text-emerald-600 shrink-0" />
-              <span>Prezzo &lt; 2.00 €</span>
-              <span className="text-[10px] text-emerald-800 bg-emerald-100 px-1 rounded font-semibold">Tutti</span>
-            </span>
-            <div className="relative shrink-0">
-              <input
-                type="checkbox"
-                checked={onlyUnder2}
-                onChange={(e) => onToggleUnder2(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </div>
-          </label>
-
-          {/* Toggle 2: Aderenti Price Cap (Eni, IP, Q8, Esso) */}
+          {/* Toggle 1: Aderenti Price Cap (Eni, IP, Q8, Esso) - DEFAULT ATTIVO */}
           <label className="relative flex items-center justify-between gap-2 cursor-pointer select-none">
             <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
               <ShieldCheck className="w-3 h-3 text-amber-600 shrink-0" />
               <span>Accordo Price Cap</span>
-              <span className="text-[10px] text-amber-800 bg-amber-100 px-1 rounded font-semibold">Grandi Reti</span>
+              <span className="text-[10px] text-amber-800 bg-amber-100 px-1 rounded font-semibold">Grandi Reti &lt;2€</span>
             </span>
             <div className="relative shrink-0">
               <input
                 type="checkbox"
                 checked={onlyPriceCap}
-                onChange={(e) => onTogglePriceCap(e.target.checked)}
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  onTogglePriceCap(val);
+                  if (val && onlyUnder2) {
+                    onToggleUnder2(false);
+                  }
+                }}
                 className="sr-only peer"
               />
               <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-600"></div>
             </div>
           </label>
 
-          {/* Toggle 3: Solo Self-Service */}
+          {/* Toggle 2: Prezzo < 2.00 € Tutti i gestori (inclusi No Logo / Pompe Bianche) */}
           <label className="relative flex items-center justify-between gap-2 cursor-pointer select-none">
-            <span className="text-xs font-medium text-slate-700 flex items-center gap-1">
+            <span className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+              <Tag className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span>Tutti sotto i 2.00 €</span>
+              <span className="text-[10px] text-emerald-800 bg-emerald-100 px-1 rounded font-semibold">+ No Logo</span>
+            </span>
+            <div className="relative shrink-0">
+              <input
+                type="checkbox"
+                checked={onlyUnder2}
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  onToggleUnder2(val);
+                  if (val && onlyPriceCap) {
+                    onTogglePriceCap(false);
+                  }
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </div>
+          </label>
+
+          {/* Toggle 3: Solo Self-Service - DEFAULT ATTIVO */}
+          <label className="relative flex items-center justify-between gap-2 cursor-pointer select-none">
+            <span className="text-xs font-semibold text-slate-700 flex items-center gap-1">
               <span>Solo Self-Service</span>
               <span className="text-[10px] text-slate-600 bg-slate-200 px-1 rounded font-mono">SELF</span>
             </span>
@@ -359,8 +371,9 @@ export const Filters: React.FC<FiltersProps> = ({
             ) : (
               <span> in tutta la Campania</span>
             )}
-            {onlyUnder2 && <span className="text-emerald-700 font-semibold"> (prezzi &lt; 2.00 €)</span>}
-            {onlyPriceCap && <span className="text-amber-700 font-semibold"> (Grandi Reti Eni·IP·Q8·Esso)</span>}
+            {onlyPriceCap && <span className="text-amber-700 font-semibold"> (Accordo Price Cap Grandi Reti &lt;2€)</span>}
+            {onlyUnder2 && <span className="text-emerald-700 font-semibold"> (Tutti i marchi &lt;2€)</span>}
+            {onlySelf && <span className="text-slate-600 font-medium"> [Self]</span>}
           </span>
 
           {userLocation && (
@@ -376,8 +389,9 @@ export const Filters: React.FC<FiltersProps> = ({
             selectedFuel !== 'all' ||
             selectedBrand !== 'all' ||
             searchQuery !== '' ||
-            !onlyUnder2 ||
-            onlyPriceCap ||
+            !onlyPriceCap ||
+            !onlySelf ||
+            onlyUnder2 ||
             userLocation) && (
             <button
               onClick={() => {
@@ -386,9 +400,9 @@ export const Filters: React.FC<FiltersProps> = ({
                 onFuelChange('all');
                 onBrandChange('all');
                 onSearchChange('');
-                onToggleUnder2(true);
-                onTogglePriceCap(false);
+                onTogglePriceCap(true);
                 onToggleSelf(true);
+                onToggleUnder2(false);
                 onToggleSortByDistance(false);
               }}
               className="text-xs text-emerald-700 hover:text-emerald-900 font-medium underline underline-offset-2"

@@ -59,8 +59,9 @@ export async function GET(request: NextRequest) {
     const territorio = searchParams.get('territorio') || 'all'; // 'all' | 'penisola'
     const carburante = searchParams.get('carburante') || 'all';
     const brand = searchParams.get('brand') || 'all';
-    const onlyUnder2 = searchParams.get('onlyUnder2') !== 'false'; // Prezzo effettivo < 2.00 €
-    const onlyPriceCap = searchParams.get('onlyPriceCap') === 'true'; // Grandi Reti aderenti (Eni, IP, Q8, Esso)
+    const onlyUnder2 = searchParams.get('onlyUnder2') === 'true'; // Tutti i marchi < 2.00 € (incluse Pompe Bianche)
+    // Default to true as requested: "di default tieni attivo Solo Self Service e Accordo Price Cap"
+    const onlyPriceCap = searchParams.get('onlyPriceCap') !== 'false'; // Accordo Price Cap Grandi Reti (Eni, IP, Q8, Esso)
     // Default to true as explicitly requested by user ("di default metti solo Self-service")
     const onlySelf = searchParams.get('onlySelf') !== 'false';
     const search = (searchParams.get('search') || '').trim();
@@ -86,8 +87,8 @@ export async function GET(request: NextRequest) {
       filtered = filtered.filter((s) => s.province === pUpper);
     }
 
-    // Filter by Grandi Reti Aderenti Price Cap (Eni, IP, Q8, Esso)
-    if (onlyPriceCap) {
+    // Filter by Grandi Reti Aderenti Price Cap (Eni, IP, Q8, Esso) se non è selezionato "Tutti i marchi < 2€"
+    if (onlyPriceCap && !onlyUnder2) {
       filtered = filtered.filter((s) => s.isPriceCapBrand);
     }
 
@@ -117,7 +118,8 @@ export async function GET(request: NextRequest) {
         matchingPrices = matchingPrices.filter((p) => p.isSelf);
       }
 
-      if (onlyUnder2) {
+      // Se è attivo Accordo Price Cap o Prezzo < 2.00 €, filtra solo i prezzi inferiori a 2.00 €
+      if (onlyPriceCap || onlyUnder2) {
         matchingPrices = matchingPrices.filter((p) => p.price < 2.00);
       }
 

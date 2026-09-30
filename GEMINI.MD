@@ -54,3 +54,4 @@ L'applicazione web consente agli automobilisti e cittadini della **Campania** di
      b) **Accordo Price Cap**: distributori delle grandi compagnie aderenti al protocollo d'intesa (Eni, IP, Q8, Esso).
    - Badge dedicati: `PRICE CAP < 2€` per le grandi reti dell'accordo, `PREZZO < 2€` per i distributori no-logo / pompe bianche.
    - Filtro territoriale Penisola Sorrentina riprogettato esteticamente come **Ambito Territoriale In Evidenza** (segmented pill switcher `Tutta la Campania` vs `🌊 Penisola Sorrentina 22 Pompe`), con elenco dei 6 comuni costieri, disattivazione coerente della tendina provinciale e riposizionamento della mappa Leaflet a zoom 12.
+   - **Stato di Default dell'Applicazione:** Attivati contemporaneamente all'avvio sia **Solo Self-Service** che **Accordo Price Cap** (Grandi Reti con prezzi < 2.00 €), permettendo all'utente di passare con un click a "Tutti sotto i 2.00 €" per includere anche le Pompe Bianche no-logo.

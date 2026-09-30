@@ -51,10 +51,10 @@ export default function HomePage() {
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFuel, setSelectedFuel] = useState<string>('all');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
-  const [onlyUnder2, setOnlyUnder2] = useState<boolean>(true); // Prezzo effettivo < 2.00 €
-  const [onlyPriceCap, setOnlyPriceCap] = useState<boolean>(false); // Grandi Reti Aderenti Price Cap (Eni, IP, Q8, Esso)
-  // User explicitly requested: "di default metti solo Self-service"
-  const [onlySelf, setOnlySelf] = useState<boolean>(true);
+  // User explicitly requested: "di default tieni attivo Solo Self Service e Accordo Price Cap"
+  const [onlyPriceCap, setOnlyPriceCap] = useState<boolean>(true); // default true: Accordo Price Cap Grandi Reti
+  const [onlySelf, setOnlySelf] = useState<boolean>(true); // default true: Solo Self-service
+  const [onlyUnder2, setOnlyUnder2] = useState<boolean>(false); // default false: Tutti i marchi < 2.00 € (incluse no-logo)
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
