@@ -35,7 +35,7 @@ npm install
 ```bash
 npm run dev
 ```
-L'applicazione sarà disponibile su `http://localhost:3000`.
+L'applicazione sarà disponibile su `http://localhost:7777`.
 
 ### Build di Produzione
 ```bash
