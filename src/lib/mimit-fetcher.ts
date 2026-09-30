@@ -19,7 +19,7 @@ export function isPenisolaSorrentina(city: string): boolean {
 }
 
 // Fonte Primaria: API Osservaprezzi Carburanti
-export const OSSERVAPREZZI_API_ENDPOINT = 'https://carburanti.mise.gov.it/ospzApi/search/area';
+export const OSSERVAPREZZI_API_ENDPOINT = 'https://carburanti.mise.gov.it/ospzApi/search/servicearea';
 
 // Fonte Secondaria: Open Data MIMIT CSV
 export const MIMIT_ANAGRAFICA_URL = 'https://www.mimit.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv';
@@ -57,7 +57,13 @@ function normalizeFuelType(name: string): FuelType {
 }
 
 function cleanBrand(brand: string): string {
-  if (!brand || brand.trim() === '' || brand.trim() === 'None' || brand.toLowerCase().includes('pompe bianche')) {
+  if (
+    !brand ||
+    brand.trim() === '' ||
+    brand.trim() === 'None' ||
+    brand.toLowerCase().includes('pompe bianche') ||
+    brand.toLowerCase().includes('pompebianche')
+  ) {
     return 'Pompe Bianche';
   }
   const b = brand.trim();
@@ -320,6 +326,39 @@ export function normalizeStationAddress(rawAddress: string, _rawCity: string): s
   return addr;
 }
 
+// Parse MIMIT API address format: "STREET [CAP] - CITY PROV"
+export function parseApiAddress(rawAddress: string, fallbackProv: string): { street: string; cap: string; city: string; province: string } {
+  if (!rawAddress) return { street: '', cap: '', city: '', province: fallbackProv };
+  const cleaned = rawAddress.trim().replace(/\s+/g, ' ');
+  const m = cleaned.match(/^(.*?)(?:\s+(\d{5}))?\s*-\s*-?\s*(.*?)\s+([A-Z]{2})$/);
+  if (m) {
+    const rawCity = m[3].replace(/^[\s\-–—]+/, '').trim();
+    return {
+      street: m[1].trim(),
+      cap: m[2] || '',
+      city: rawCity,
+      province: m[4].trim(),
+    };
+  }
+  return { street: cleaned, cap: '', city: '', province: fallbackProv };
+}
+
+function formatApiDate(isoDateStr?: string): string {
+  if (!isoDateStr) return new Date().toLocaleDateString('it-IT');
+  try {
+    const d = new Date(isoDateStr);
+    if (isNaN(d.getTime())) return isoDateStr;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  } catch {
+    return isoDateStr;
+  }
+}
+
 /**
  * FONTE PRIMARIA: API Osservaprezzi Carburanti (carburanti.mise.gov.it/ospzApi)
  * Effettua 5 richieste POST in parallelo (una per provincia campana: NA, SA, CE, AV, BN).
@@ -334,20 +373,19 @@ async function fetchFromOsservaprezziApi(): Promise<{
   try {
     const provincePromises = provinces.map(async (prov) => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
 
       try {
         const response = await fetch(OSSERVAPREZZI_API_ENDPOINT, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            'Content-Type': 'application/json;charset=UTF-8',
+            'Accept': 'application/json, text/plain, */*',
             'User-Agent': userAgent,
-            'Referer': 'https://carburanti.mise.gov.it/ospzSearch/area',
+            'Referer': 'https://carburanti.mise.gov.it/ospzSearch/servicearea',
             'Origin': 'https://carburanti.mise.gov.it',
           },
           body: JSON.stringify({
-            region: 15, // Campania
             province: prov,
           }),
           signal: controller.signal,
@@ -387,25 +425,31 @@ async function fetchFromOsservaprezziApi(): Promise<{
 
         const id = `gpl_mimit_${mimitId}`;
         const override = PENISOLA_SORRENTINA_OVERRIDES[mimitId];
-        const rawAddr = item.address || item.indirizzo || '';
-        const rawCity = item.city || item.comune || '';
-        const rawProv = (item.province || item.provincia || res.province).toUpperCase();
+
+        // Decodifica avanzata indirizzo dalla struttura dell'API Osservaprezzi ("VIA ... CAP - COMUNE PROV")
+        const parsedAddr = parseApiAddress(item.address || item.indirizzo || '', res.province);
+        const rawAddr = parsedAddr.street || item.address || item.indirizzo || '';
+        const rawCity = parsedAddr.city || item.city || item.comune || '';
+        const rawProv = (override ? res.province : (parsedAddr.province || item.province || item.provincia || res.province)).toUpperCase();
 
         const finalAddress = override?.cleanAddress || normalizeStationAddress(rawAddr, rawCity);
         const finalCity = override?.cleanCity || rawCity;
         const finalName = override?.cleanName || item.name || item.nomeImpianto || `Distributore ${mimitId}`;
         const finalBrand = override?.cleanBrand || cleanBrand(item.brand || item.bandiera || '');
-        const lat = override?.latitude ?? parseFloat(item.latitude || item.lat || '0');
-        const lng = override?.longitude ?? parseFloat(item.longitude || item.lng || item.long || '0');
+
+        const apiLat = item.location?.lat ?? item.latitude ?? item.lat;
+        const apiLng = item.location?.lng ?? item.longitude ?? item.lng ?? item.long;
+        const lat = override?.latitude ?? (typeof apiLat === 'number' ? apiLat : parseFloat(apiLat || '0'));
+        const lng = override?.longitude ?? (typeof apiLng === 'number' ? apiLng : parseFloat(apiLng || '0'));
 
         const prices: FuelPrice[] = [];
         const rawPrices = item.fuels || item.prezzi || item.carburanti || [];
 
         for (const p of rawPrices) {
-          const priceVal = parseFloat(p.price || p.prezzo || '0');
+          const priceVal = typeof p.price === 'number' ? p.price : parseFloat(p.price || p.prezzo || '0');
           if (isNaN(priceVal) || priceVal <= 0.0) continue;
 
-          const desc = p.fuelType || p.descCarburante || p.carburante || '';
+          const desc = p.name || p.fuelType || p.descCarburante || p.carburante || '';
           const fuelType = normalizeFuelType(desc);
           if (fuelType === 'Benzina' && (priceVal < 1.30 || priceVal > 3.50)) continue;
           if (fuelType === 'Gasolio' && (priceVal < 1.30 || priceVal > 3.50)) continue;
@@ -414,13 +458,14 @@ async function fetchFromOsservaprezziApi(): Promise<{
 
           const isSelf = p.isSelf === true || p.isSelf === 1 || p.isSelf === '1' || p.service === 'self';
           const isUnder2Euro = (fuelType === 'Benzina' || fuelType === 'Gasolio') && priceVal < 2.00;
+          const formattedUpdated = p.updatedAt || p.dtComu || (item.insertDate ? formatApiDate(item.insertDate) : new Date().toLocaleDateString('it-IT'));
 
           prices.push({
             fuelType,
             rawFuelName: desc,
             price: priceVal,
             isSelf,
-            updatedAt: p.updatedAt || p.dtComu || new Date().toLocaleDateString('it-IT'),
+            updatedAt: formattedUpdated,
             isUnder2Euro,
           });
         }

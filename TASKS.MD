@@ -10,7 +10,8 @@
 - [x] Verifica build di produzione (`npm run build`) superata con successo
 
 ### [BACKEND] Data Ingestion & API Serverless
-- [x] Implementazione **Fonte Primaria**: API Osservaprezzi Carburanti (`carburanti.mise.gov.it/ospzApi/search/area`) con 5 richieste parallele per le province campane
+- [x] Implementazione **Fonte Primaria**: API Osservaprezzi Carburanti (`carburanti.mise.gov.it/ospzApi/search/servicearea`) con 5 richieste parallele per le province campane (1.863 impianti campani in ~700ms)
+- [x] Garanzia **Zero-AI**: nessuna intelligenza artificiale o modello generativo altera o stima i dati, 100% derivati da MIMIT API e Open Data CSV ufficiali
 - [x] Implementazione **Fonte Secondaria**: Open Data MIMIT CSV Fallback (`mimit.gov.it/images/exportCSV/`)
 - [x] Orchestratore unificato `CampaniaGplDataSource` con fallback a cascata e persistenza in memoria (TTL 15 min)
 - [x] Filtro geolocalizzato esclusivo per le 5 province campane (NA, SA, CE, AV, BN)

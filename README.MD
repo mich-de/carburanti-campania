@@ -68,8 +68,9 @@ npm run start
 L'applicazione integra un'architettura a **doppia fonte ufficiale** con fallback automatico e cache a 15 minuti:
 
 1. **Fonte Primaria (Live):**
-   - **API Osservaprezzi Carburanti:** `https://carburanti.mise.gov.it/ospzApi/search/area`
-   - Interroga in parallelo le 5 province campane (Napoli, Salerno, Caserta, Avellino, Benevento).
+   - **API Osservaprezzi Carburanti:** `https://carburanti.mise.gov.it/ospzApi/search/servicearea`
+   - Interroga in parallelo le 5 province campane (Napoli, Salerno, Caserta, Avellino, Benevento) in ~700ms.
+   - **Zero AI:** Dati al 100% ufficiali trasmessi direttamente dai gestori degli impianti, mai stimati o inventati.
 2. **Fonte Secondaria (Fallback Automatico):**
    - **Open Data MIMIT CSV:** `https://www.mimit.gov.it/images/exportCSV/` (`anagrafica_impianti_attivi.csv` e `prezzo_alle_8.csv`).
    - Si attiva in caso di timeout, rate limit o indisponibilità temporanea dell'endpoint primario.

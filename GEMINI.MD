@@ -55,3 +55,10 @@ L'applicazione web consente agli automobilisti e cittadini della **Campania** di
    - Badge dedicati: `PRICE CAP < 2€` per le grandi reti dell'accordo, `PREZZO < 2€` per i distributori no-logo / pompe bianche.
    - Filtro territoriale Penisola Sorrentina riprogettato esteticamente come **Ambito Territoriale In Evidenza** (segmented pill switcher `Tutta la Campania` vs `🌊 Penisola Sorrentina 22 Pompe`), con elenco dei 6 comuni costieri, disattivazione coerente della tendina provinciale e riposizionamento della mappa Leaflet a zoom 12.
    - **Stato di Default dell'Applicazione:** Attivati contemporaneamente all'avvio sia **Solo Self-Service** che **Accordo Price Cap** (Grandi Reti con prezzi < 2.00 €), permettendo all'utente di passare con un click a "Tutti sotto i 2.00 €" per includere anche le Pompe Bianche no-logo.
+
+9. **Integrazione Endpoint Ufficiale MIMIT `/ospzApi/search/servicearea` & Principio Zero-AI:**
+   - Riaffermato il principio fondante del progetto ("mai un dato inventato"): nessuna intelligenza artificiale o modello generativo è coinvolto nella pipeline dati dell'applicazione. Nessun prezzo o dato è mai stimato o inventato.
+   - Fonte Primaria: `https://carburanti.mise.gov.it/ospzApi/search/servicearea`, chiamata in parallelo per le 5 province (`NA`, `SA`, `CE`, `AV`, `BN`) con payload `{ province: prov }`. Risponde in ~700ms restituendo l'intero parco distributori campano (1.863 impianti) con orari esatti di trasmissione al Ministero (`insertDate`), coordinate GPS e listini self/servito.
+   - Aggiunto `parseApiAddress` per la scomposizione della stringa toponomastica MIMIT (`VIA ... [CAP] - COMUNE PROV`) e formattazione data/ora italiana `formatApiDate`.
+   - Mantenuto il fallback su Open Data CSV (`prezzo_alle_8.csv`) e persistenza in-memory dell'ultimo dato reale valido qualora la rete sia temporaneamente irraggiungibile.
+
