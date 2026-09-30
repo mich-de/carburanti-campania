@@ -2,9 +2,9 @@
 
 Applicazione web moderna sviluppata in **Next.js** per monitorare in tempo reale i distributori di carburante in **Campania** che offrono prezzi inferiori a **2,00 € al litro**, conformemente al price cap introdotto dai grandi operatori (Eni, IP, Q8) come riportato da *Il Sole 24 Ore*.
 
-- 🌐 **Sito Live in Produzione:** [https://web-carburanti.vercel.app](https://web-carburanti.vercel.app)
-- 📦 **Repository GitHub:** [https://github.com/mich-de/web-carburanti](https://github.com/mich-de/web-carburanti)
-- 🏢 **Team Vercel:** `micheles-projects-863019a6` (Michele's projects)
+- 🌐 **Sito Live in Produzione:** [https://carburanti-campania.vercel.app](https://carburanti-campania.vercel.app) (alias: [https://web-carburanti.vercel.app](https://web-carburanti.vercel.app))
+- 📦 **Repository GitHub:** [https://github.com/mich-de/carburanti-campania](https://github.com/mich-de/carburanti-campania)
+- 🏢 **Team Vercel:** `micheles-projects-863019a6/carburanti-campania`
 
 ---
 
