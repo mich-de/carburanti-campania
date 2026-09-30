@@ -62,3 +62,11 @@ L'applicazione web consente agli automobilisti e cittadini della **Campania** di
    - Aggiunto `parseApiAddress` per la scomposizione della stringa toponomastica MIMIT (`VIA ... [CAP] - COMUNE PROV`) e formattazione data/ora italiana `formatApiDate`.
    - Mantenuto il fallback su Open Data CSV (`prezzo_alle_8.csv`) e persistenza in-memory dell'ultimo dato reale valido qualora la rete sia temporaneamente irraggiungibile.
 
+10. **Deployment Live su Vercel & GitHub Repository:**
+   - **Repository GitHub:** `https://github.com/mich-de/web-carburanti` (creata e sincronizzata con `gh repo create`)
+   - **Vercel Project & Team:** `micheles-projects-863019a6/web-carburanti`
+   - **Production URL:** `https://web-carburanti.vercel.app`
+   - **Direct Deployment URL:** `https://web-carburanti-1rclr0ovt-micheles-projects-863019a6.vercel.app`
+   - **Verifica API in Produzione:** Risposta `200 OK` con 1.863 stazioni campane elaborate in tempo reale da `/ospzApi/search/servicearea`.
+
+
