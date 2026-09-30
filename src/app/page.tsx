@@ -6,7 +6,7 @@ import { Header } from '@/components/Header';
 import { NewsBanner } from '@/components/NewsBanner';
 import { StatsBanner } from '@/components/StatsBanner';
 import { Legenda } from '@/components/Legenda';
-import { Filters, ViewMode } from '@/components/Filters';
+import { Filters, ViewMode, TerritoryMode } from '@/components/Filters';
 import { StationCard } from '@/components/StationCard';
 import { StationTable } from '@/components/StationTable';
 import { Footer } from '@/components/Footer';
@@ -47,10 +47,12 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   // Filter States
+  const [selectedTerritory, setSelectedTerritory] = useState<TerritoryMode>('all');
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
   const [selectedFuel, setSelectedFuel] = useState<string>('all');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
-  const [onlyUnder2, setOnlyUnder2] = useState<boolean>(true); // default true for price cap focus
+  const [onlyUnder2, setOnlyUnder2] = useState<boolean>(true); // Prezzo effettivo < 2.00 €
+  const [onlyPriceCap, setOnlyPriceCap] = useState<boolean>(false); // Grandi Reti Aderenti Price Cap (Eni, IP, Q8, Esso)
   // User explicitly requested: "di default metti solo Self-service"
   const [onlySelf, setOnlySelf] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -79,9 +81,11 @@ export default function HomePage() {
     try {
       const params = new URLSearchParams({
         provincia: selectedProvince,
+        territorio: selectedTerritory,
         carburante: selectedFuel,
         brand: selectedBrand,
         onlyUnder2: onlyUnder2 ? 'true' : 'false',
+        onlyPriceCap: onlyPriceCap ? 'true' : 'false',
         onlySelf: onlySelf ? 'true' : 'false',
         search: searchQuery,
       });
@@ -110,7 +114,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProvince, selectedFuel, selectedBrand, onlyUnder2, onlySelf, searchQuery]);
+  }, [selectedProvince, selectedTerritory, selectedFuel, selectedBrand, onlyUnder2, onlyPriceCap, onlySelf, searchQuery]);
 
   // Load data when filters change (debounced for search)
   useEffect(() => {
@@ -226,13 +230,19 @@ export default function HomePage() {
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
         {/* 3. KPI Statistics Banner */}
-        <StatsBanner stats={stats} selectedProvince={selectedProvince} />
+        <StatsBanner
+          stats={stats}
+          selectedProvince={selectedProvince}
+          selectedTerritory={selectedTerritory}
+        />
 
         {/* 4. Legenda & Symbol Guide */}
         <Legenda />
 
         {/* 5. Filters & Controls */}
         <Filters
+          selectedTerritory={selectedTerritory}
+          onTerritoryChange={setSelectedTerritory}
           selectedProvince={selectedProvince}
           onProvinceChange={setSelectedProvince}
           selectedFuel={selectedFuel}
@@ -241,6 +251,8 @@ export default function HomePage() {
           onBrandChange={setSelectedBrand}
           onlyUnder2={onlyUnder2}
           onToggleUnder2={setOnlyUnder2}
+          onlyPriceCap={onlyPriceCap}
+          onTogglePriceCap={setOnlyPriceCap}
           onlySelf={onlySelf}
           onToggleSelf={setOnlySelf}
           searchQuery={searchQuery}
@@ -341,12 +353,14 @@ export default function HomePage() {
               )}
               <button
                 onClick={() => {
+                  setSelectedTerritory('all');
                   setSelectedProvince('all');
                   setSelectedFuel('all');
                   setSelectedBrand('all');
                   setSearchQuery('');
-                  setOnlyUnder2(false);
-                  setOnlySelf(false);
+                  setOnlyUnder2(true);
+                  setOnlyPriceCap(false);
+                  setOnlySelf(true);
                   setSortByDistance(false);
                 }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold text-xs transition hover:bg-emerald-700"
@@ -393,7 +407,7 @@ export default function HomePage() {
             {viewMode === 'map' && (
               <StationMap
                 stations={processedStations}
-                selectedProvince={selectedProvince}
+                selectedProvince={selectedTerritory === 'penisola' ? 'PENISOLA_SORRENTINA' : selectedProvince}
                 userLocation={userLocation}
               />
             )}

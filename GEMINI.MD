@@ -48,4 +48,9 @@ L'applicazione web consente agli automobilisti e cittadini della **Campania** di
      3. `19655` Stazione Ranzo Mario (Sant'Agnello): Benzina Self 1.990 €
    - Perfezionata la ricerca "Meta": eliminati i falsi positivi da "METANAUTO" (Atena Lucana/Padula) su nome e operatore, isolando con precisione i 2 impianti di Meta (UNOIL Meta e Tiber).
 
-
+8. **Separazione Prezzo < 2€ vs Accordo Price Cap & Selettore Territoriale Penisola Sorrentina:**
+   - Introdotta la distinzione formale tra:
+     a) **Prezzo < 2.00 €**: qualsiasi distributore (inclusi indipendenti e pompe bianche) con prezzo effettivo comunicato sotto 2 euro.
+     b) **Accordo Price Cap**: distributori delle grandi compagnie aderenti al protocollo d'intesa (Eni, IP, Q8, Esso).
+   - Badge dedicati: `PRICE CAP < 2€` per le grandi reti dell'accordo, `PREZZO < 2€` per i distributori no-logo / pompe bianche.
+   - Filtro territoriale Penisola Sorrentina riprogettato esteticamente come **Ambito Territoriale In Evidenza** (segmented pill switcher `Tutta la Campania` vs `🌊 Penisola Sorrentina 22 Pompe`), con elenco dei 6 comuni costieri, disattivazione coerente della tendina provinciale e riposizionamento della mappa Leaflet a zoom 12.

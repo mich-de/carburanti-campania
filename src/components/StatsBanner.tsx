@@ -7,23 +7,27 @@ import { Flame, ShieldCheck, Zap, Gauge, MapPin } from 'lucide-react';
 interface StatsBannerProps {
   stats: FuelStats | null;
   selectedProvince: string;
+  selectedTerritory?: 'all' | 'penisola';
 }
 
-export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvince }) => {
+export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvince, selectedTerritory }) => {
   if (!stats) return null;
 
-  const currentProvStats =
-    selectedProvince !== 'all' && stats.byProvince[selectedProvince]
-      ? stats.byProvince[selectedProvince]
-      : null;
+  const isPen = selectedTerritory === 'penisola';
+  const currentProvStats = isPen
+    ? stats.byProvince['PENISOLA_SORRENTINA']
+    : selectedProvince !== 'all' && stats.byProvince[selectedProvince]
+    ? stats.byProvince[selectedProvince]
+    : null;
 
   const total = currentProvStats ? currentProvStats.total : stats.totalStationsCampania;
   const under2 = currentProvStats ? currentProvStats.under2Euro : stats.stationsUnder2Euro;
   const under2Percent = total > 0 ? Math.round((under2 / total) * 100) : 0;
 
-  const getDisplayName = (code: string) => {
-    if (code === 'all') return 'Campania';
-    return `Provincia ${code}`;
+  const getDisplayName = () => {
+    if (isPen) return 'Penisola Sorrentina';
+    if (selectedProvince === 'all') return 'Campania';
+    return `Provincia ${selectedProvince}`;
   };
 
   return (
@@ -32,7 +36,7 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvinc
       <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            {getDisplayName(selectedProvince)} &lt; 2.00 €
+            {getDisplayName()} &lt; 2.00 €
           </span>
           <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
             <ShieldCheck className="w-4 h-4" />

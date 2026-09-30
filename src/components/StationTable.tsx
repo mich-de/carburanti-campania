@@ -110,10 +110,15 @@ export const StationTable: React.FC<StationTableProps> = ({ stations, selectedFu
 
                   {/* Price Cap Badge */}
                   <td className="py-3 px-3 sm:px-4 text-center whitespace-nowrap">
-                    {st.hasUnder2Euro ? (
+                    {st.hasUnder2Euro && st.isPriceCapBrand ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                         <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                        <span>ATTIVO (&lt;2€)</span>
+                        <span>PRICE CAP (&lt;2€)</span>
+                      </span>
+                    ) : st.hasUnder2Euro ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                        <Tag className="w-3 h-3 text-teal-600" />
+                        <span>PREZZO &lt;2€</span>
                       </span>
                     ) : (
                       <span className="text-[11px] text-slate-400 font-medium">—</span>

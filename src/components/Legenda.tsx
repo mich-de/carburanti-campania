@@ -64,10 +64,20 @@ export const Legenda: React.FC = () => {
               <div className="flex items-start gap-2">
                 <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300 shrink-0">
                   <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                  &lt; 2€
+                  PRICE CAP &lt; 2€
                 </span>
                 <p>
-                  <strong>Price Cap Attivo:</strong> L&apos;impianto vende almeno un carburante a meno di 2,00 €/litro.
+                  <strong>Accordo Grandi Reti:</strong> Distributore aderente al protocollo Price Cap (Eni, IP, Q8, Esso) con sconti su Benzina (tetto 1,990€) o Gasolio.
+                </p>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-300 shrink-0">
+                  <Tag className="w-3 h-3 text-teal-600" />
+                  PREZZO &lt; 2€
+                </span>
+                <p>
+                  <strong>Prezzo Effettivo &lt; 2€:</strong> Distributore indipendente (Pompe Bianche) che comunica un prezzo sotto 2,00 €/litro.
                 </p>
               </div>
             </div>

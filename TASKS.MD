@@ -24,8 +24,10 @@
 ### [FRONTEND] Dashboard & Interfaccia Utente
 - [x] Header moderno con badge live status, notizia Price Cap e ultimo aggiornamento MIMIT
 - [x] Summary KPI Cards (Distributori < 2€, Prezzo Min Benzina/Diesel, Medie e minimi regionali)
-- [x] Standardizzazione province reali della Campania (NA, SA, CE, AV, BN) e rimozione pseudo-provincia Penisola Sorrentina dal selettore
-- [x] Perfezionamento conteggio Price Cap < 2.00 € (applicato rigorosamente a Benzina e Gasolio, escludendo GPL e Metano che sono naturalmente a basso costo)
+- [x] Standardizzazione province reali della Campania (NA, SA, CE, AV, BN)
+- [x] Selettore territoriale in evidenza **"🌊 Penisola Sorrentina"** con segmented control estetico, badge 22 pompe, elenco dei 6 comuni costieri e centraggio automatico mappa
+- [x] Separazione netta dei filtri: **"Prezzo < 2.00 €"** (qualsiasi distributore) vs **"Accordo Price Cap"** (Grandi Reti Eni, IP, Q8, Esso)
+- [x] Badge distinti nelle schede e in classifica: `PRICE CAP < 2€` per i grandi marchi aderenti e `PREZZO < 2€` per le pompe indipendenti
 - [x] Default "Solo Self-service" attivato all'avvio
 - [x] Componente **Legenda** interattiva per simboli, listini multipli e colori brand
 - [x] Ricerca intelligente senza falsi positivi (boundary match per "Meta", esclusione da "Metanauto" in operatore e nome, feedback esplicito con pulsante di reset filtri)

@@ -56,9 +56,11 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const provincia = searchParams.get('provincia') || 'all';
+    const territorio = searchParams.get('territorio') || 'all'; // 'all' | 'penisola'
     const carburante = searchParams.get('carburante') || 'all';
     const brand = searchParams.get('brand') || 'all';
-    const onlyUnder2 = searchParams.get('onlyUnder2') !== 'false'; // default true to highlight price cap
+    const onlyUnder2 = searchParams.get('onlyUnder2') !== 'false'; // Prezzo effettivo < 2.00 €
+    const onlyPriceCap = searchParams.get('onlyPriceCap') === 'true'; // Grandi Reti aderenti (Eni, IP, Q8, Esso)
     // Default to true as explicitly requested by user ("di default metti solo Self-service")
     const onlySelf = searchParams.get('onlySelf') !== 'false';
     const search = (searchParams.get('search') || '').trim();
@@ -76,12 +78,17 @@ export async function GET(request: NextRequest) {
 
     let filtered: GasStation[] = stations;
 
-    // Filter by Province or Penisola Sorrentina
-    if (provincia === 'PENISOLA_SORRENTINA') {
+    // Filter by Territorio (Penisola Sorrentina) or Province
+    if (territorio === 'penisola' || provincia === 'PENISOLA_SORRENTINA') {
       filtered = filtered.filter((s) => isPenisolaSorrentina(s.city));
     } else if (provincia !== 'all') {
       const pUpper = provincia.toUpperCase();
       filtered = filtered.filter((s) => s.province === pUpper);
+    }
+
+    // Filter by Grandi Reti Aderenti Price Cap (Eni, IP, Q8, Esso)
+    if (onlyPriceCap) {
+      filtered = filtered.filter((s) => s.isPriceCapBrand);
     }
 
     // Filter by Brand

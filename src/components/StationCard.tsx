@@ -91,10 +91,23 @@ export const StationCard: React.FC<StationCardProps> = ({ station, selectedFuel 
             </span>
           </div>
 
-          {station.hasUnder2Euro && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2 py-0.5 rounded-full shrink-0">
+          {station.hasUnder2Euro && station.isPriceCapBrand && (
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2 py-0.5 rounded-full shrink-0"
+              title="Aderente accordo Price Cap Grandi Reti (Eni, IP, Q8, Esso)"
+            >
               <ShieldCheck className="w-3 h-3 text-emerald-600" />
               <span>PRICE CAP &lt; 2€</span>
+            </span>
+          )}
+
+          {station.hasUnder2Euro && !station.isPriceCapBrand && (
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-800 bg-teal-50 border border-teal-300 px-2 py-0.5 rounded-full shrink-0"
+              title="Prezzo effettivo comunicato sotto 2,00 €"
+            >
+              <Tag className="w-3 h-3 text-teal-600" />
+              <span>PREZZO &lt; 2€</span>
             </span>
           )}
         </div>

@@ -25,6 +25,7 @@ export interface GasStation {
   minPrice: number;
   hasUnder2Euro: boolean;
   bestPriceUnder2?: FuelPrice;
+  isPriceCapBrand?: boolean;
   distanceKm?: number;
 }
 

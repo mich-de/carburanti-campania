@@ -69,6 +69,19 @@ function cleanBrand(brand: string): string {
   return b;
 }
 
+export function isPriceCapBrand(brand: string): boolean {
+  if (!brand) return false;
+  const b = brand.toLowerCase();
+  return (
+    b.includes('eni') ||
+    b.includes('agip') ||
+    b.includes('ip') ||
+    b.includes('api') ||
+    b.includes('q8') ||
+    b.includes('esso')
+  );
+}
+
 export interface StationOverride {
   cleanName?: string;
   cleanBrand?: string;
@@ -435,6 +448,7 @@ async function fetchFromOsservaprezziApi(): Promise<{
             minPrice: validMin < 999 ? validMin : 0,
             hasUnder2Euro: hasUnder2,
             bestPriceUnder2: bestUnder2,
+            isPriceCapBrand: isPriceCapBrand(finalBrand),
           });
         }
       }
@@ -544,6 +558,7 @@ async function fetchFromMimitCsvFallback(): Promise<{
       prices: [],
       minPrice: 999,
       hasUnder2Euro: false,
+      isPriceCapBrand: isPriceCapBrand(finalBrand),
     });
   }
 
