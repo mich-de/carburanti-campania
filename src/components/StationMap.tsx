@@ -11,6 +11,7 @@ interface StationMapProps {
 
 const PROVINCE_CENTERS: Record<string, [number, number, number]> = {
   all: [40.85, 14.65, 9], // Center of Campania
+  PENISOLA_SORRENTINA: [40.645, 14.415, 12], // Penisola Sorrentina: Vico Equense, Meta, Sorrento, Massa Lubrense
   NA: [40.85, 14.26, 11],
   SA: [40.68, 14.76, 10],
   CE: [41.07, 14.33, 11],

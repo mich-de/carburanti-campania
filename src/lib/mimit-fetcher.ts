@@ -2,6 +2,22 @@ import { GasStation, FuelPrice, FuelType, FuelStats } from '../types/fuel';
 
 const CAMPANIA_PROVINCES = new Set(['NA', 'SA', 'CE', 'AV', 'BN']);
 
+export const PENISOLA_SORRENTINA_TOWNS = new Set([
+  'MASSA LUBRENSE',
+  'SORRENTO',
+  "SANT'AGNELLO",
+  'SANT AGNELLO',
+  'PIANO DI SORRENTO',
+  'META',
+  'VICO EQUENSE',
+]);
+
+export function isPenisolaSorrentina(city: string): boolean {
+  if (!city) return false;
+  const norm = city.trim().toUpperCase();
+  return PENISOLA_SORRENTINA_TOWNS.has(norm);
+}
+
 const MIMIT_ANAGRAFICA_URL = 'https://www.mimit.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv';
 const MIMIT_PREZZI_URL = 'https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv';
 
@@ -261,6 +277,7 @@ function calculateCampaniaStats(stations: GasStation[], extractionDate: string):
     CE: { total: 0, under2Euro: 0 },
     AV: { total: 0, under2Euro: 0 },
     BN: { total: 0, under2Euro: 0 },
+    PENISOLA_SORRENTINA: { total: 0, under2Euro: 0 },
   };
 
   for (const st of stations) {
@@ -276,6 +293,14 @@ function calculateCampaniaStats(stations: GasStation[], extractionDate: string):
       }
     }
 
+    const isPen = isPenisolaSorrentina(st.city);
+    if (isPen) {
+      byProvince.PENISOLA_SORRENTINA.total++;
+      if (st.hasUnder2Euro) {
+        byProvince.PENISOLA_SORRENTINA.under2Euro++;
+      }
+    }
+
     for (const pr of st.prices) {
       if (pr.fuelType === 'Benzina' && pr.isSelf) {
         benzinaSelfCount++;
@@ -286,6 +311,11 @@ function calculateCampaniaStats(stations: GasStation[], extractionDate: string):
             byProvince[prov].minBenzina = pr.price;
           }
         }
+        if (isPen) {
+          if (!byProvince.PENISOLA_SORRENTINA.minBenzina || pr.price < byProvince.PENISOLA_SORRENTINA.minBenzina!) {
+            byProvince.PENISOLA_SORRENTINA.minBenzina = pr.price;
+          }
+        }
       }
       if (pr.fuelType === 'Gasolio' && pr.isSelf) {
         gasolioSelfCount++;
@@ -294,6 +324,11 @@ function calculateCampaniaStats(stations: GasStation[], extractionDate: string):
         if (byProvince[prov]) {
           if (!byProvince[prov].minGasolio || pr.price < byProvince[prov].minGasolio!) {
             byProvince[prov].minGasolio = pr.price;
+          }
+        }
+        if (isPen) {
+          if (!byProvince.PENISOLA_SORRENTINA.minGasolio || pr.price < byProvince.PENISOLA_SORRENTINA.minGasolio!) {
+            byProvince.PENISOLA_SORRENTINA.minGasolio = pr.price;
           }
         }
       }

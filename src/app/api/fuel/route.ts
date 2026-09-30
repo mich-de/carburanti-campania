@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchCampaniaFuelData } from '@/lib/mimit-fetcher';
+import { fetchCampaniaFuelData, isPenisolaSorrentina } from '@/lib/mimit-fetcher';
 import { GasStation } from '@/types/fuel';
 
 export const dynamic = 'force-dynamic';
@@ -20,8 +20,10 @@ export async function GET(request: NextRequest) {
 
     let filtered: GasStation[] = stations;
 
-    // Filter by Province
-    if (provincia !== 'all') {
+    // Filter by Province or Penisola Sorrentina
+    if (provincia === 'PENISOLA_SORRENTINA') {
+      filtered = filtered.filter((s) => isPenisolaSorrentina(s.city));
+    } else if (provincia !== 'all') {
       const pUpper = provincia.toUpperCase();
       filtered = filtered.filter((s) => s.province === pUpper);
     }

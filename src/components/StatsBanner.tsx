@@ -21,13 +21,19 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvinc
   const under2 = currentProvStats ? currentProvStats.under2Euro : stats.stationsUnder2Euro;
   const under2Percent = total > 0 ? Math.round((under2 / total) * 100) : 0;
 
+  const getDisplayName = (code: string) => {
+    if (code === 'all') return 'Campania';
+    if (code === 'PENISOLA_SORRENTINA') return 'Penisola Sorrentina';
+    return `Provincia ${code}`;
+  };
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 my-4">
       {/* Metric 1: Impianti Sotto i 2 Euro */}
       <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            {selectedProvince === 'all' ? 'Campania' : selectedProvince} &lt; 2.00 €
+            {getDisplayName(selectedProvince)} &lt; 2.00 €
           </span>
           <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
             <ShieldCheck className="w-4 h-4" />

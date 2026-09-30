@@ -6,8 +6,9 @@
 L'applicazione web consente agli automobilisti e cittadini della **Campania** di monitorare in tempo reale i distributori di carburante con prezzi inferiori a 2,00 € al litro, in conformità all'accordo sul *price cap* e sconti attivati da Eni, IP e Q8 (come documentato dall'articolo de *Il Sole 24 Ore*).
 
 ### Decisioni Architetturali Fondamentali
-1. **Perché focalizzarsi solo sulla Campania?**
+1. **Perché focalizzarsi solo sulla Campania e Penisola Sorrentina?**
    - Riduce il volume dati da ~22.000 distributori nazionali a ~1.850 distributori campani (Province: Napoli `NA`, Salerno `SA`, Caserta `CE`, Avellino `AV`, Benevento `BN`).
+   - Aggiunto filtro territoriale dedicato **"Penisola Sorrentina"** che ingloba con precisione i 6 comuni costieri (Massa Lubrense, Sorrento, Sant'Agnello, Piano di Sorrento, Meta, Vico Equense) con 22 impianti monitorati e coordinate mappa centrate a zoom 12.
    - Risolve i limiti di memoria (512MB/1024MB) e timeout (10s) delle Vercel Serverless Functions.
    - Fornisce un'esperienza ultra-reattiva sia su mobile che desktop.
    - Piena coerenza con le specifiche fornite in `testo.txt` (`CampaniaGplDataSource`, 5 province in parallelo/unificate, TTL 15 min, sanitizzazione `prezzo <= 0` treated as N/D).
