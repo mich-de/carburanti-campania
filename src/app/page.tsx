@@ -5,12 +5,13 @@ import { GasStation, FuelStats, FuelApiResponse } from '@/types/fuel';
 import { Header } from '@/components/Header';
 import { NewsBanner } from '@/components/NewsBanner';
 import { StatsBanner } from '@/components/StatsBanner';
+import { Legenda } from '@/components/Legenda';
 import { Filters, ViewMode } from '@/components/Filters';
 import { StationCard } from '@/components/StationCard';
 import { StationTable } from '@/components/StationTable';
 import { StationMap } from '@/components/StationMap';
 import { Footer } from '@/components/Footer';
-import { AlertCircle, Loader2, Sparkles, FilterX } from 'lucide-react';
+import { AlertCircle, Loader2, Sparkles, FilterX, Info } from 'lucide-react';
 
 function computeHaversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth radius in km
@@ -37,9 +38,16 @@ export default function HomePage() {
   const [selectedFuel, setSelectedFuel] = useState<string>('all');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
   const [onlyUnder2, setOnlyUnder2] = useState<boolean>(true); // default true for price cap focus
-  const [onlySelf, setOnlySelf] = useState<boolean>(false);
+  // User explicitly requested: "di default metti solo Self-service"
+  const [onlySelf, setOnlySelf] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+
+  // Search Feedback when price cap or self excludes searched town
+  const [searchFeedback, setSearchFeedback] = useState<{
+    matchingWithoutPriceCapCount: number;
+    minPriceFound?: number;
+  } | null>(null);
 
   // GPS Geolocation States (Recommended by inSella article)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -75,6 +83,7 @@ export default function HomePage() {
       if (json.success) {
         setStations(json.data);
         setStats(json.stats);
+        setSearchFeedback(json.searchFeedback || null);
       } else {
         throw new Error('Dati non validi restituiti dal server.');
       }
@@ -175,7 +184,10 @@ export default function HomePage() {
         {/* 3. KPI Statistics Banner */}
         <StatsBanner stats={stats} selectedProvince={selectedProvince} />
 
-        {/* 4. Filters & Controls */}
+        {/* 4. Legenda & Symbol Guide */}
+        <Legenda />
+
+        {/* 5. Filters & Controls */}
         <Filters
           selectedProvince={selectedProvince}
           onProvinceChange={setSelectedProvince}
@@ -198,6 +210,36 @@ export default function HomePage() {
           sortByDistance={sortByDistance}
           onToggleSortByDistance={setSortByDistance}
         />
+
+        {/* Smart Search Notice (e.g. Meta has stations > 2€ or only Servito) */}
+        {searchFeedback && searchFeedback.matchingWithoutPriceCapCount > 0 && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-start gap-2.5">
+              <span className="p-1.5 rounded-lg bg-amber-200 text-amber-900 shrink-0 mt-0.5">
+                <Info className="w-4 h-4" />
+              </span>
+              <div className="text-xs sm:text-sm">
+                <p className="font-bold text-amber-900">
+                  Trovati {searchFeedback.matchingWithoutPriceCapCount} distributori per &ldquo;{searchQuery}&rdquo;, ma superano la soglia dei 2.00 € o sono solo Servito
+                </p>
+                <p className="text-amber-800 text-xs mt-0.5">
+                  I prezzi rilevati partono da{' '}
+                  <strong>{searchFeedback.minPriceFound ? `${searchFeedback.minPriceFound.toFixed(3)} €/L` : 'oltre 2.00 €'}</strong>.
+                  Puoi visualizzarli rimuovendo i vincoli di prezzo e self-service.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setOnlyUnder2(false);
+                setOnlySelf(false);
+              }}
+              className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 transition active:scale-95 shadow-xs"
+            >
+              Mostra tutti i distributori di &ldquo;{searchQuery}&rdquo;
+            </button>
+          </div>
+        )}
 
         {/* Error Notification */}
         {error && (
@@ -233,23 +275,42 @@ export default function HomePage() {
               Nessun distributore trovato con questi filtri
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 mb-4">
-              Prova a rimuovere il vincolo &ldquo;Solo &lt; 2.00 €&rdquo; o a selezionare &ldquo;Tutta la Campania&rdquo;.
+              {searchQuery ? (
+                <>
+                  Nessun distributore per &ldquo;<strong>{searchQuery}</strong>&rdquo; rispetta tutti i filtri attivi (&lt; 2.00 € e Self-service).
+                </>
+              ) : (
+                <>Prova a rimuovere il vincolo &ldquo;Solo &lt; 2.00 €&rdquo; o &ldquo;Solo Self-Service&rdquo;.</>
+              )}
             </p>
-            <button
-              onClick={() => {
-                setSelectedProvince('all');
-                setSelectedFuel('all');
-                setSelectedBrand('all');
-                setSearchQuery('');
-                setOnlyUnder2(false);
-                setOnlySelf(false);
-                setSortByDistance(false);
-              }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold text-xs transition hover:bg-emerald-700"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Azzera tutti i filtri</span>
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setOnlyUnder2(false);
+                    setOnlySelf(false);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 text-white font-semibold text-xs transition hover:bg-amber-700"
+                >
+                  <span>Mostra tutti per &ldquo;{searchQuery}&rdquo;</span>
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setSelectedProvince('all');
+                  setSelectedFuel('all');
+                  setSelectedBrand('all');
+                  setSearchQuery('');
+                  setOnlyUnder2(false);
+                  setOnlySelf(false);
+                  setSortByDistance(false);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold text-xs transition hover:bg-emerald-700"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Azzera tutti i filtri</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -296,7 +357,7 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* 5. Footer */}
+      {/* 6. Footer */}
       <Footer />
     </div>
   );

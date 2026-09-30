@@ -54,6 +54,10 @@ export interface FuelApiResponse {
   data: GasStation[];
   stats: FuelStats;
   totalFiltered: number;
+  searchFeedback?: {
+    matchingWithoutPriceCapCount: number;
+    minPriceFound?: number;
+  };
   meta: {
     region: 'Campania';
     provinces: string[];

@@ -1,8 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchCampaniaFuelData, isPenisolaSorrentina } from '@/lib/mimit-fetcher';
-import { GasStation } from '@/types/fuel';
+import { GasStation, FuelApiResponse } from '@/types/fuel';
 
 export const dynamic = 'force-dynamic';
+
+function matchesSearchQuery(s: GasStation, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+
+  const city = s.city.toLowerCase().trim();
+  // Exact city match (e.g. "meta", "sorrento", "napoli")
+  if (city === q) return true;
+
+  // City word or prefix match (e.g. "meta" in "meta" or "piano di sorrento")
+  const cityWords = city.split(/[\s'-]+/);
+  if (cityWords.some((w) => w === q || (q.length >= 3 && w.startsWith(q)))) {
+    return true;
+  }
+
+  // MIMIT ID match
+  if (s.mimitId && s.mimitId.includes(q)) return true;
+
+  // Address match
+  if (s.address.toLowerCase().includes(q)) return true;
+
+  // Operator match
+  if (s.operator.toLowerCase().includes(q)) return true;
+
+  // Name match:
+  // If query is short (<= 4 chars like "meta"), do word boundary match
+  // so "meta" doesn't accidentally match "metano" or "metanauto"!
+  const name = s.name.toLowerCase();
+  if (q.length <= 4 && q !== 'gpl' && q !== 'cng') {
+    const nameWords = name.split(/[\s\-_/.,]+/);
+    if (nameWords.some((w) => w === q || (w.startsWith(q) && !w.startsWith('metan')))) {
+      return true;
+    }
+  } else {
+    if (name.includes(q)) return true;
+  }
+
+  return false;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,8 +50,9 @@ export async function GET(request: NextRequest) {
     const carburante = searchParams.get('carburante') || 'all';
     const brand = searchParams.get('brand') || 'all';
     const onlyUnder2 = searchParams.get('onlyUnder2') !== 'false'; // default true to highlight price cap
-    const onlySelf = searchParams.get('onlySelf') === 'true';
-    const search = (searchParams.get('search') || '').trim().toLowerCase();
+    // Default to true as explicitly requested by user ("di default metti solo Self-service")
+    const onlySelf = searchParams.get('onlySelf') !== 'false';
+    const search = (searchParams.get('search') || '').trim();
     const forceRefresh = searchParams.get('refresh') === 'true';
 
     // Fetch live MIMIT data for Campania (15 min cache)
@@ -34,19 +74,14 @@ export async function GET(request: NextRequest) {
       filtered = filtered.filter((s) => s.brand.toLowerCase().includes(bUpper));
     }
 
-    // Filter by Search Query (name, address, city, operator, mimitId)
+    // Filter by Smart Search Query (name, address, city, operator, mimitId)
+    let searchMatchingAllStations: GasStation[] = [];
     if (search) {
-      filtered = filtered.filter(
-        (s) =>
-          s.name.toLowerCase().includes(search) ||
-          s.city.toLowerCase().includes(search) ||
-          s.address.toLowerCase().includes(search) ||
-          s.operator.toLowerCase().includes(search) ||
-          (s.mimitId && s.mimitId.includes(search))
-      );
+      filtered = filtered.filter((s) => matchesSearchQuery(s, search));
+      searchMatchingAllStations = [...filtered];
     }
 
-    // Filter by Fuel Type and Under 2 Euro condition
+    // Filter by Fuel Type, Self-Service and Under 2 Euro condition
     filtered = filtered
       .map((station) => {
         let matchingPrices = station.prices;
@@ -78,28 +113,39 @@ export async function GET(request: NextRequest) {
       })
       .filter((s): s is GasStation => s !== null);
 
+    // Calculate feedback for search if results are empty because of price / self filter
+    let searchFeedback: { matchingWithoutPriceCapCount: number; minPriceFound?: number } | undefined = undefined;
+    if (search && filtered.length === 0 && searchMatchingAllStations.length > 0) {
+      const allPrices = searchMatchingAllStations.flatMap((s) => s.prices.map((p) => p.price));
+      const minAvailable = allPrices.length > 0 ? Math.min(...allPrices) : undefined;
+      searchFeedback = {
+        matchingWithoutPriceCapCount: searchMatchingAllStations.length,
+        minPriceFound: minAvailable,
+      };
+    }
+
     // Sort by min price ascending
     filtered.sort((a, b) => a.minPrice - b.minPrice);
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: filtered,
-        stats,
-        totalFiltered: filtered.length,
-        meta: {
-          region: 'Campania',
-          provinces: ['NA', 'SA', 'CE', 'AV', 'BN'],
-          source: 'MIMIT Open Data',
-          ttlMinutes: 15,
-        },
+    const responsePayload: FuelApiResponse = {
+      success: true,
+      data: filtered,
+      stats,
+      totalFiltered: filtered.length,
+      searchFeedback,
+      meta: {
+        region: 'Campania',
+        provinces: ['NA', 'SA', 'CE', 'AV', 'BN'],
+        source: 'MIMIT Open Data',
+        ttlMinutes: 15,
       },
-      {
-        headers: {
-          'Cache-Control': 's-maxage=900, stale-while-revalidate=1800',
-        },
-      }
-    );
+    };
+
+    return NextResponse.json(responsePayload, {
+      headers: {
+        'Cache-Control': 's-maxage=900, stale-while-revalidate=1800',
+      },
+    });
   } catch (error) {
     console.error('API /api/fuel error:', error);
     return NextResponse.json(
