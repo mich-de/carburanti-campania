@@ -13,9 +13,10 @@ L'applicazione web consente agli automobilisti e cittadini della **Campania** di
    - Fornisce un'esperienza ultra-reattiva sia su mobile che desktop.
    - Piena coerenza con le specifiche fornite in `testo.txt` (`CampaniaGplDataSource`, 5 province in parallelo/unificate, TTL 15 min, sanitizzazione `prezzo <= 0` treated as N/D).
 
-2. **Fonti Dati e Compliance Rete:**
-   - Dati ufficiali: Open Data MIMIT (`anagrafica_impianti_attivi.csv` e `prezzo_alle_8.csv`).
-   - Portale ministeriale di verifica: `carburanti.mise.gov.it/ospzSearch/zona` (Osservaprezzi MIMIT).
+2. **Architettura Doppia Fonte (Primaria API + Secondaria CSV Fallback):**
+   - **Fonte Primaria:** API Osservaprezzi Carburanti (`https://carburanti.mise.gov.it/ospzApi/search/area`). Richiede in parallelo le 5 province campane (NA, SA, CE, AV, BN) con timeout di 4 secondi.
+   - **Fonte Secondaria (Fallback Automatico):** Open Data MIMIT CSV (`https://www.mimit.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv` e `prezzo_alle_8.csv`).
+   - **Persistenza & Resilienza:** Se entrambe le chiamate di rete falliscono, il sistema mantiene in memoria l'ultimo dato reale valido verificato (conformità stretta a `testo.txt`: *"Se falliscono entrambe, il DB non viene toccato: resta l'ultimo dato reale"*).
    - Iniziativa Price Cap documentata da *Il Sole 24 Ore* e *inSella* ("Il giorno della benzina sotto i 2 euro"): tetto a 1,990 €/l benzina (self e servito) e 2,190 €/l gasolio.
    - Geolocalizzazione: calcolo distanza locale via formula Haversine (`distanceKm`), nessun tracciamento verso server terzi.
    - Mappe: OpenStreetMap standard tiles via Leaflet.

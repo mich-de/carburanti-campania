@@ -55,8 +55,15 @@ export async function GET(request: NextRequest) {
     const search = (searchParams.get('search') || '').trim();
     const forceRefresh = searchParams.get('refresh') === 'true';
 
-    // Fetch live MIMIT data for Campania (15 min cache)
-    const { stations, stats } = await fetchCampaniaFuelData(forceRefresh);
+    // Fetch live Campania fuel data via CampaniaGplDataSource (Primary API + Secondary CSV Fallback)
+    const {
+      stations,
+      stats,
+      activeSource,
+      sourceDescription,
+      primaryEndpoint,
+      secondaryEndpoint,
+    } = await fetchCampaniaFuelData(forceRefresh);
 
     let filtered: GasStation[] = stations;
 
@@ -136,7 +143,12 @@ export async function GET(request: NextRequest) {
       meta: {
         region: 'Campania',
         provinces: ['NA', 'SA', 'CE', 'AV', 'BN'],
-        source: 'MIMIT Open Data',
+        source: sourceDescription,
+        activeSource,
+        primarySource: 'API Osservaprezzi Carburanti',
+        secondarySource: 'Open Data MIMIT CSV',
+        primaryEndpoint,
+        secondaryEndpoint,
         ttlMinutes: 15,
       },
     };

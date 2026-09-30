@@ -102,25 +102,35 @@ export const NewsBanner: React.FC = () => {
                 </div>
               </div>
 
-              {/* Card 3: Portale MIMIT Osservaprezzi */}
+              {/* Card 3: Doppia Fonte Integrata */}
               <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-xs flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-1.5 font-bold text-slate-900 mb-1">
                     <Compass className="w-4 h-4 text-teal-600" />
-                    <span>MIMIT Osservaprezzi Ufficiale</span>
+                    <span>Doppia Fonte Ufficiale Integrata</span>
                   </div>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    I prezzi mostrati in questa app sono scaricati direttamente dal portale pubblico del <strong>Ministero delle Imprese e del Made in Italy</strong> ex D.M. 12/03/2009 per le 5 province campane (NA, SA, CE, AV, BN).
+                    <strong>Fonte Primaria:</strong> API Osservaprezzi (<code>carburanti.mise.gov.it/ospzApi</code>).<br />
+                    <strong>Fonte Secondaria:</strong> Open Data MIMIT CSV (<code>mimit.gov.it/images/exportCSV</code>) in fallback automatico con caching 15 min.
                   </p>
                 </div>
-                <div className="mt-2 pt-2 border-t border-slate-100">
+                <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1">
                   <a
                     href="https://carburanti.mise.gov.it/ospzSearch/zona"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-800 hover:text-teal-950 underline"
                   >
-                    <span>Vai su carburanti.mise.gov.it/ospzSearch/zona</span>
+                    <span>1. API Portale Osservaprezzi MIMIT</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <a
+                    href="https://www.mimit.gov.it/it/open-data/elenco-dataset/carburanti-prezzi-praticati-e-anagrafica-degli-impianti"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 hover:text-emerald-950 underline"
+                  >
+                    <span>2. Open Data MIMIT CSV (Export)</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>

@@ -49,6 +49,11 @@ export interface FuelStats {
   cachedAt: string;
 }
 
+export type ActiveDataSource =
+  | 'PRIMARY_OSSERVAPREZZI_API'
+  | 'SECONDARY_MIMIT_CSV_FALLBACK'
+  | 'MEMORY_CACHE';
+
 export interface FuelApiResponse {
   success: boolean;
   data: GasStation[];
@@ -61,7 +66,12 @@ export interface FuelApiResponse {
   meta: {
     region: 'Campania';
     provinces: string[];
-    source: 'MIMIT Open Data';
+    source: string;
+    activeSource: ActiveDataSource;
+    primarySource: string;
+    secondarySource: string;
+    primaryEndpoint: string;
+    secondaryEndpoint: string;
     ttlMinutes: number;
   };
 }

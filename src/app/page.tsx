@@ -62,6 +62,9 @@ export default function HomePage() {
     minPriceFound?: number;
   } | null>(null);
 
+  // Dual Source API Metadata
+  const [apiMeta, setApiMeta] = useState<FuelApiResponse['meta'] | null>(null);
+
   // GPS Geolocation States (Recommended by inSella article)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
@@ -97,6 +100,7 @@ export default function HomePage() {
         setStations(json.data);
         setStats(json.stats);
         setSearchFeedback(json.searchFeedback || null);
+        setApiMeta(json.meta || null);
       } else {
         throw new Error('Dati non validi restituiti dal server.');
       }
@@ -181,9 +185,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* 1. Header */}
+      {/* 1. Header with live status and dual-source indicator */}
       <Header
         lastUpdated={stats?.lastDataExtraction}
+        sourceBadge={apiMeta?.source}
+        activeSource={apiMeta?.activeSource}
         onRefresh={() => loadData(true)}
         isLoading={isLoading}
         totalUnder2={stats?.stationsUnder2Euro || 0}
@@ -191,6 +197,31 @@ export default function HomePage() {
 
       {/* 2. News Banner referring to Il Sole 24 Ore, inSella and MIMIT */}
       <NewsBanner />
+
+      {/* 2b. Dual Source Architecture Status Bar */}
+      <div className="bg-slate-100/90 border-b border-slate-200/80 py-2 px-4 text-xs text-slate-600">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold text-slate-800 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Sincronizzazione Dati:
+            </span>
+            <span className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+              <strong className="text-slate-800">1. Primaria:</strong> API Osservaprezzi (<code>carburanti.mise.gov.it/ospzApi</code>)
+            </span>
+            <span className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+              <strong className="text-slate-800">2. Secondaria:</strong> Open Data MIMIT CSV (<code>mimit.gov.it/images/exportCSV</code>)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 self-end md:self-auto">
+            <span className="text-slate-500">Fonte attiva:</span>
+            <span className="font-bold bg-emerald-100 text-emerald-900 px-2.5 py-0.5 rounded-full border border-emerald-300 shadow-2xs">
+              {apiMeta?.source || 'Open Data MIMIT CSV (Fallback)'}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">

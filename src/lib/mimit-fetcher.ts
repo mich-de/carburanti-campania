@@ -1,4 +1,4 @@
-import { GasStation, FuelPrice, FuelType, FuelStats } from '../types/fuel';
+import { GasStation, FuelPrice, FuelType, FuelStats, ActiveDataSource } from '../types/fuel';
 
 const CAMPANIA_PROVINCES = new Set(['NA', 'SA', 'CE', 'AV', 'BN']);
 
@@ -18,8 +18,13 @@ export function isPenisolaSorrentina(city: string): boolean {
   return PENISOLA_SORRENTINA_TOWNS.has(norm);
 }
 
-const MIMIT_ANAGRAFICA_URL = 'https://www.mimit.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv';
-const MIMIT_PREZZI_URL = 'https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv';
+// Fonte Primaria: API Osservaprezzi Carburanti
+export const OSSERVAPREZZI_API_ENDPOINT = 'https://carburanti.mise.gov.it/ospzApi/search/area';
+
+// Fonte Secondaria: Open Data MIMIT CSV
+export const MIMIT_ANAGRAFICA_URL = 'https://www.mimit.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv';
+export const MIMIT_PREZZI_URL = 'https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv';
+export const MIMIT_CSV_ENDPOINT = 'https://www.mimit.gov.it/images/exportCSV/';
 
 // In-memory cache for Serverless/Edge instances (15 min TTL as specified in testo.txt)
 interface CacheStore {
@@ -27,6 +32,8 @@ interface CacheStore {
   data: GasStation[];
   stats: FuelStats;
   rawDate: string;
+  activeSource: ActiveDataSource;
+  sourceDescription: string;
 }
 
 let memoryCache: CacheStore | null = null;
@@ -300,206 +307,417 @@ export function normalizeStationAddress(rawAddress: string, _rawCity: string): s
   return addr;
 }
 
+/**
+ * FONTE PRIMARIA: API Osservaprezzi Carburanti (carburanti.mise.gov.it/ospzApi)
+ * Effettua 5 richieste POST in parallelo (una per provincia campana: NA, SA, CE, AV, BN).
+ */
+async function fetchFromOsservaprezziApi(): Promise<{
+  stations: GasStation[];
+  extractionDate: string;
+} | null> {
+  const provinces = ['NA', 'SA', 'CE', 'AV', 'BN'];
+  const userAgent = 'CampaniaFuelPriceCapMonitor/1.0 (Vercel-App; contatto: mic.deangelis@gmail.com)';
+
+  try {
+    const provincePromises = provinces.map(async (prov) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      try {
+        const response = await fetch(OSSERVAPREZZI_API_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': userAgent,
+            'Referer': 'https://carburanti.mise.gov.it/ospzSearch/area',
+            'Origin': 'https://carburanti.mise.gov.it',
+          },
+          body: JSON.stringify({
+            region: 15, // Campania
+            province: prov,
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const json = await response.json();
+        return { province: prov, data: json };
+      } catch {
+        clearTimeout(timeoutId);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(provincePromises);
+    const validResults = results.filter((r): r is { province: string; data: any } => r !== null && Boolean(r.data));
+
+    if (validResults.length === 0) {
+      return null;
+    }
+
+    const stationMap = new Map<string, GasStation>();
+
+    for (const res of validResults) {
+      const rawStations = Array.isArray(res.data)
+        ? res.data
+        : res.data?.results || res.data?.array || res.data?.stazioni || [];
+
+      for (const item of rawStations) {
+        const mimitId = String(item.id || item.idImpianto || '').trim();
+        if (!mimitId) continue;
+
+        const id = `gpl_mimit_${mimitId}`;
+        const override = PENISOLA_SORRENTINA_OVERRIDES[mimitId];
+        const rawAddr = item.address || item.indirizzo || '';
+        const rawCity = item.city || item.comune || '';
+        const rawProv = (item.province || item.provincia || res.province).toUpperCase();
+
+        const finalAddress = override?.cleanAddress || normalizeStationAddress(rawAddr, rawCity);
+        const finalCity = override?.cleanCity || rawCity;
+        const finalName = override?.cleanName || item.name || item.nomeImpianto || `Distributore ${mimitId}`;
+        const finalBrand = override?.cleanBrand || cleanBrand(item.brand || item.bandiera || '');
+        const lat = override?.latitude ?? parseFloat(item.latitude || item.lat || '0');
+        const lng = override?.longitude ?? parseFloat(item.longitude || item.lng || item.long || '0');
+
+        const prices: FuelPrice[] = [];
+        const rawPrices = item.fuels || item.prezzi || item.carburanti || [];
+
+        for (const p of rawPrices) {
+          const priceVal = parseFloat(p.price || p.prezzo || '0');
+          if (isNaN(priceVal) || priceVal <= 0.0) continue;
+
+          const desc = p.fuelType || p.descCarburante || p.carburante || '';
+          const fuelType = normalizeFuelType(desc);
+          if (fuelType === 'Benzina' && (priceVal < 1.30 || priceVal > 3.50)) continue;
+          if (fuelType === 'Gasolio' && (priceVal < 1.30 || priceVal > 3.50)) continue;
+          if (fuelType === 'GPL' && (priceVal < 0.40 || priceVal > 1.50)) continue;
+          if (fuelType === 'Metano' && (priceVal < 0.70 || priceVal > 3.00)) continue;
+
+          const isSelf = p.isSelf === true || p.isSelf === 1 || p.isSelf === '1' || p.service === 'self';
+          const isUnder2Euro = priceVal < 2.00;
+
+          prices.push({
+            fuelType,
+            rawFuelName: desc,
+            price: priceVal,
+            isSelf,
+            updatedAt: p.updatedAt || p.dtComu || new Date().toLocaleDateString('it-IT'),
+            isUnder2Euro,
+          });
+        }
+
+        if (prices.length > 0) {
+          const validMin = Math.min(...prices.map((p) => p.price));
+          const hasUnder2 = prices.some((p) => p.isUnder2Euro);
+          const bestUnder2 = prices
+            .filter((p) => p.isUnder2Euro)
+            .sort((a, b) => a.price - b.price)[0];
+
+          stationMap.set(mimitId, {
+            id,
+            mimitId,
+            name: finalName,
+            operator: item.operator || item.gestore || '',
+            brand: finalBrand,
+            stationType: item.stationType || item.tipoImpianto || 'Stradale',
+            address: finalAddress,
+            city: finalCity,
+            province: rawProv as 'NA' | 'SA' | 'CE' | 'AV' | 'BN',
+            latitude: isNaN(lat) ? 0 : lat,
+            longitude: isNaN(lng) ? 0 : lng,
+            prices,
+            minPrice: validMin < 999 ? validMin : 0,
+            hasUnder2Euro: hasUnder2,
+            bestPriceUnder2: bestUnder2,
+          });
+        }
+      }
+    }
+
+    const stations = Array.from(stationMap.values());
+    if (stations.length === 0) return null;
+
+    return {
+      stations,
+      extractionDate: `API Live ${new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`,
+    };
+  } catch (error) {
+    console.warn('[OsservaprezziApiClient] Impossibile contattare API primaria, passaggio automatico a fallback:', error);
+    return null;
+  }
+}
+
+/**
+ * FONTE SECONDARIA (FALLBACK): Open Data MIMIT CSV (mimit.gov.it/images/exportCSV)
+ * Streaming riga per riga e sanitizzazione secondo testo.txt
+ */
+async function fetchFromMimitCsvFallback(): Promise<{
+  stations: GasStation[];
+  extractionDate: string;
+}> {
+  const fetchOptions: RequestInit = {
+    headers: {
+      'User-Agent': 'CampaniaFuelPriceCapMonitor/1.0 (Vercel-App; contatto: mic.deangelis@gmail.com)',
+      'Accept': 'text/csv,text/plain;q=0.9,*/*;q=0.8',
+    },
+    next: { revalidate: 900 }, // 15 minuti di cache ISR
+  };
+
+  const [resAnagrafica, resPrezzi] = await Promise.all([
+    fetch(MIMIT_ANAGRAFICA_URL, fetchOptions),
+    fetch(MIMIT_PREZZI_URL, fetchOptions),
+  ]);
+
+  if (!resAnagrafica.ok || !resPrezzi.ok) {
+    throw new Error(`Failed to fetch from MIMIT CSV: anagrafica=${resAnagrafica.status}, prezzi=${resPrezzi.status}`);
+  }
+
+  const [textAnagrafica, textPrezzi] = await Promise.all([
+    resAnagrafica.text(),
+    resPrezzi.text(),
+  ]);
+
+  const stationMap = new Map<string, GasStation>();
+  const anagraficaLines = textAnagrafica.split('\n');
+
+  let extractionDate = 'Recente';
+  if (anagraficaLines[0] && anagraficaLines[0].includes('Estrazione del')) {
+    extractionDate = anagraficaLines[0].replace('Estrazione del', '').trim();
+  }
+
+  for (let i = 1; i < anagraficaLines.length; i++) {
+    const line = anagraficaLines[i].trim();
+    if (!line) continue;
+    const parts = line.split('|');
+    if (parts.length < 10) continue;
+
+    const [
+      idRaw,
+      operator,
+      brand,
+      stationType,
+      name,
+      address,
+      city,
+      provRaw,
+      latRaw,
+      lngRaw,
+    ] = parts;
+
+    const prov = provRaw.trim().toUpperCase();
+    if (!CAMPANIA_PROVINCES.has(prov)) {
+      continue; // Filtra rigorosamente solo le 5 province campane
+    }
+
+    const lat = parseFloat(latRaw);
+    const lng = parseFloat(lngRaw);
+
+    const mimitId = idRaw.trim();
+    const id = `gpl_mimit_${mimitId}`;
+
+    const override = PENISOLA_SORRENTINA_OVERRIDES[mimitId];
+    const finalAddress = override?.cleanAddress || normalizeStationAddress(address || '', city || '');
+    const finalCity = override?.cleanCity || (city ? city.trim() : '');
+    const finalName = override?.cleanName || (name ? name.trim() : `Distributore ${idRaw}`);
+    const finalBrand = override?.cleanBrand || cleanBrand(brand);
+    const finalLat = override?.latitude ?? (isNaN(lat) ? 0 : lat);
+    const finalLng = override?.longitude ?? (isNaN(lng) ? 0 : lng);
+
+    stationMap.set(mimitId, {
+      id,
+      mimitId,
+      name: finalName,
+      operator: operator ? operator.trim() : '',
+      brand: finalBrand,
+      stationType: stationType ? stationType.trim() : 'Stradale',
+      address: finalAddress,
+      city: finalCity,
+      province: prov as 'NA' | 'SA' | 'CE' | 'AV' | 'BN',
+      latitude: finalLat,
+      longitude: finalLng,
+      prices: [],
+      minPrice: 999,
+      hasUnder2Euro: false,
+    });
+  }
+
+  const prezziLines = textPrezzi.split('\n');
+  for (let i = 1; i < prezziLines.length; i++) {
+    const line = prezziLines[i].trim();
+    if (!line) continue;
+    const parts = line.split('|');
+    if (parts.length < 5) continue;
+
+    const [idImpianto, descCarburante, prezzoStr, isSelfStr, dtComu] = parts;
+    const station = stationMap.get(idImpianto.trim());
+    if (!station) {
+      continue;
+    }
+
+    const priceVal = parseFloat(prezzoStr);
+    // Regola testo.txt: scarta prezzi <= 0.0 o test sentinels
+    if (isNaN(priceVal) || priceVal <= 0.0) {
+      continue;
+    }
+
+    const fuelType = normalizeFuelType(descCarburante);
+    if (fuelType === 'Benzina' && (priceVal < 1.30 || priceVal > 3.50)) continue;
+    if (fuelType === 'Gasolio' && (priceVal < 1.30 || priceVal > 3.50)) continue;
+    if (fuelType === 'GPL' && (priceVal < 0.40 || priceVal > 1.50)) continue;
+    if (fuelType === 'Metano' && (priceVal < 0.70 || priceVal > 3.00)) continue;
+    const isSelf = isSelfStr.trim() === '1';
+    const isUnder2Euro = priceVal < 2.00;
+
+    const fuelPrice: FuelPrice = {
+      fuelType,
+      rawFuelName: descCarburante.trim(),
+      price: priceVal,
+      isSelf,
+      updatedAt: dtComu ? dtComu.trim() : '',
+      isUnder2Euro,
+    };
+
+    station.prices.push(fuelPrice);
+
+    if (priceVal < station.minPrice) {
+      station.minPrice = priceVal;
+    }
+
+    if (isUnder2Euro) {
+      station.hasUnder2Euro = true;
+      if (!station.bestPriceUnder2 || priceVal < station.bestPriceUnder2.price) {
+        station.bestPriceUnder2 = fuelPrice;
+      }
+    }
+  }
+
+  const validStations: GasStation[] = [];
+  for (const station of Array.from(stationMap.values())) {
+    if (station.prices.length > 0) {
+      if (station.minPrice === 999) {
+        station.minPrice = 0;
+      }
+      validStations.push(station);
+    }
+  }
+
+  validStations.sort((a, b) => a.minPrice - b.minPrice);
+
+  return {
+    stations: validStations,
+    extractionDate,
+  };
+}
+
+/**
+ * CampaniaGplDataSource - Orchestratore unificato Primary (API) + Secondary (CSV Fallback)
+ * Rispetta rigorosamente le specifiche architetturali di testo.txt:
+ * 1. Prova OsservaprezziApiClient (5 POST in parallelo, una per provincia)
+ * 2. Se fallisce cade su CSV Open Data (MimitCsvFallback)
+ * 3. Se falliscono entrambe, il dato in memoria non viene toccato: resta l'ultimo dato reale valido
+ */
 export async function fetchCampaniaFuelData(forceRefresh = false): Promise<{
   stations: GasStation[];
   stats: FuelStats;
+  activeSource: ActiveDataSource;
+  sourceDescription: string;
+  primaryEndpoint: string;
+  secondaryEndpoint: string;
 }> {
   const now = Date.now();
 
-  // Return valid memory cache if within TTL
-  if (!forceRefresh && memoryCache && (now - memoryCache.timestamp < CACHE_TTL_MS)) {
+  // Se la cache in memoria è valida entro il TTL di 15 minuti, riusala
+  if (!forceRefresh && memoryCache && now - memoryCache.timestamp < CACHE_TTL_MS) {
     return {
       stations: memoryCache.data,
       stats: memoryCache.stats,
+      activeSource: memoryCache.activeSource,
+      sourceDescription: memoryCache.sourceDescription,
+      primaryEndpoint: OSSERVAPREZZI_API_ENDPOINT,
+      secondaryEndpoint: MIMIT_CSV_ENDPOINT,
     };
   }
 
-  try {
-    // In accordance with testo.txt: User-Agent identificativo
-    const fetchOptions: RequestInit = {
-      headers: {
-        'User-Agent': 'CampaniaFuelPriceCapMonitor/1.0 (Vercel-App; contatto: mic.deangelis@gmail.com)',
-        'Accept': 'text/csv,text/plain;q=0.9,*/*;q=0.8',
-      },
-      next: { revalidate: 900 }, // Next.js ISR revalidation: 15 minutes
-    };
+  // 1. Tenta la FONTE PRIMARIA: API Osservaprezzi Carburanti
+  const primaryResult = await fetchFromOsservaprezziApi();
+  if (primaryResult && primaryResult.stations.length > 0) {
+    const stats = calculateCampaniaStats(primaryResult.stations, primaryResult.extractionDate);
+    const activeSource: ActiveDataSource = 'PRIMARY_OSSERVAPREZZI_API';
+    const sourceDescription = 'API Osservaprezzi Carburanti (carburanti.mise.gov.it/ospzApi)';
 
-    // Parallel fetch for anagrafica and prezzi
-    const [resAnagrafica, resPrezzi] = await Promise.all([
-      fetch(MIMIT_ANAGRAFICA_URL, fetchOptions),
-      fetch(MIMIT_PREZZI_URL, fetchOptions),
-    ]);
-
-    if (!resAnagrafica.ok || !resPrezzi.ok) {
-      throw new Error(`Failed to fetch from MIMIT: anagrafica=${resAnagrafica.status}, prezzi=${resPrezzi.status}`);
-    }
-
-    const [textAnagrafica, textPrezzi] = await Promise.all([
-      resAnagrafica.text(),
-      resPrezzi.text(),
-    ]);
-
-    // Parse Anagrafica for Campania stations only
-    // Header format: idImpianto|Gestore|Bandiera|Tipo Impianto|Nome Impianto|Indirizzo|Comune|Provincia|Latitudine|Longitudine
-    const stationMap = new Map<string, GasStation>();
-    const anagraficaLines = textAnagrafica.split('\n');
-
-    let extractionDate = 'Recente';
-    if (anagraficaLines[0] && anagraficaLines[0].includes('Estrazione del')) {
-      extractionDate = anagraficaLines[0].replace('Estrazione del', '').trim();
-    }
-
-    for (let i = 1; i < anagraficaLines.length; i++) {
-      const line = anagraficaLines[i].trim();
-      if (!line) continue;
-      const parts = line.split('|');
-      if (parts.length < 10) continue;
-
-      const [
-        idRaw,
-        operator,
-        brand,
-        stationType,
-        name,
-        address,
-        city,
-        provRaw,
-        latRaw,
-        lngRaw,
-      ] = parts;
-
-      const prov = provRaw.trim().toUpperCase();
-      if (!CAMPANIA_PROVINCES.has(prov)) {
-        continue; // Strictly filter out any non-Campania plant
-      }
-
-      const lat = parseFloat(latRaw);
-      const lng = parseFloat(lngRaw);
-
-      // Follow ID convention from testo.txt: gpl_mimit_* for official source
-      const mimitId = idRaw.trim();
-      const id = `gpl_mimit_${mimitId}`;
-
-      const override = PENISOLA_SORRENTINA_OVERRIDES[mimitId];
-      const finalAddress = override?.cleanAddress || normalizeStationAddress(address || '', city || '');
-      const finalCity = override?.cleanCity || (city ? city.trim() : '');
-      const finalName = override?.cleanName || (name ? name.trim() : `Distributore ${idRaw}`);
-      const finalBrand = override?.cleanBrand || cleanBrand(brand);
-      const finalLat = override?.latitude ?? (isNaN(lat) ? 0 : lat);
-      const finalLng = override?.longitude ?? (isNaN(lng) ? 0 : lng);
-
-      stationMap.set(mimitId, {
-        id,
-        mimitId,
-        name: finalName,
-        operator: operator ? operator.trim() : '',
-        brand: finalBrand,
-        stationType: stationType ? stationType.trim() : 'Stradale',
-        address: finalAddress,
-        city: finalCity,
-        province: prov as 'NA' | 'SA' | 'CE' | 'AV' | 'BN',
-        latitude: finalLat,
-        longitude: finalLng,
-        prices: [],
-        minPrice: 999,
-        hasUnder2Euro: false,
-      });
-    }
-
-    // Parse Prezzi and match to Campania stations
-    // Header format: idImpianto|descCarburante|prezzo|isSelf|dtComu
-    const prezziLines = textPrezzi.split('\n');
-    for (let i = 1; i < prezziLines.length; i++) {
-      const line = prezziLines[i].trim();
-      if (!line) continue;
-      const parts = line.split('|');
-      if (parts.length < 5) continue;
-
-      const [idImpianto, descCarburante, prezzoStr, isSelfStr, dtComu] = parts;
-      const station = stationMap.get(idImpianto.trim());
-      if (!station) {
-        continue; // Not a Campania station
-      }
-
-      const priceVal = parseFloat(prezzoStr);
-      // Strictly observe rule from testo.txt:
-      // "gplPrice <= 0.0 come 'N/D', mai come il prezzo più economico in classifica"
-      // Also filter out dummy/sentinel prices like 1.000 inserted as test by some station operators
-      if (isNaN(priceVal) || priceVal <= 0.0) {
-        continue;
-      }
-
-      const fuelType = normalizeFuelType(descCarburante);
-      if (fuelType === 'Benzina' && (priceVal < 1.30 || priceVal > 3.50)) continue;
-      if (fuelType === 'Gasolio' && (priceVal < 1.30 || priceVal > 3.50)) continue;
-      if (fuelType === 'GPL' && (priceVal < 0.40 || priceVal > 1.50)) continue;
-      if (fuelType === 'Metano' && (priceVal < 0.70 || priceVal > 3.00)) continue;
-      const isSelf = isSelfStr.trim() === '1';
-      const isUnder2Euro = priceVal < 2.00;
-
-      const fuelPrice: FuelPrice = {
-        fuelType,
-        rawFuelName: descCarburante.trim(),
-        price: priceVal,
-        isSelf,
-        updatedAt: dtComu ? dtComu.trim() : '',
-        isUnder2Euro,
-      };
-
-      station.prices.push(fuelPrice);
-
-      if (priceVal < station.minPrice) {
-        station.minPrice = priceVal;
-      }
-
-      if (isUnder2Euro) {
-        station.hasUnder2Euro = true;
-        if (!station.bestPriceUnder2 || priceVal < station.bestPriceUnder2.price) {
-          station.bestPriceUnder2 = fuelPrice;
-        }
-      }
-    }
-
-    // Filter stations that have at least one valid price and clean minPrice
-    const validStations: GasStation[] = [];
-    for (const station of Array.from(stationMap.values())) {
-      if (station.prices.length > 0) {
-        if (station.minPrice === 999) {
-          station.minPrice = 0;
-        }
-        validStations.push(station);
-      }
-    }
-
-    // Sort stations by best price ascending
-    validStations.sort((a, b) => a.minPrice - b.minPrice);
-
-    // Compute aggregated Campania statistics
-    const stats: FuelStats = calculateCampaniaStats(validStations, extractionDate);
-
-    // Save to memory cache
     memoryCache = {
       timestamp: now,
-      data: validStations,
+      data: primaryResult.stations,
       stats,
-      rawDate: extractionDate,
+      rawDate: primaryResult.extractionDate,
+      activeSource,
+      sourceDescription,
     };
 
     return {
-      stations: validStations,
+      stations: primaryResult.stations,
       stats,
+      activeSource,
+      sourceDescription,
+      primaryEndpoint: OSSERVAPREZZI_API_ENDPOINT,
+      secondaryEndpoint: MIMIT_CSV_ENDPOINT,
+    };
+  }
+
+  // 2. FONTE SECONDARIA: Open Data MIMIT CSV Fallback
+  try {
+    const fallbackResult = await fetchFromMimitCsvFallback();
+    const stats = calculateCampaniaStats(fallbackResult.stations, fallbackResult.extractionDate);
+    const activeSource: ActiveDataSource = 'SECONDARY_MIMIT_CSV_FALLBACK';
+    const sourceDescription = 'Open Data MIMIT CSV (mimit.gov.it/images/exportCSV)';
+
+    memoryCache = {
+      timestamp: now,
+      data: fallbackResult.stations,
+      stats,
+      rawDate: fallbackResult.extractionDate,
+      activeSource,
+      sourceDescription,
+    };
+
+    return {
+      stations: fallbackResult.stations,
+      stats,
+      activeSource,
+      sourceDescription,
+      primaryEndpoint: OSSERVAPREZZI_API_ENDPOINT,
+      secondaryEndpoint: MIMIT_CSV_ENDPOINT,
     };
   } catch (error) {
-    console.error('Error fetching MIMIT data:', error);
-    // If cache exists, fall back to it as per testo.txt: "Se falliscono entrambe, il DB non viene toccato: resta l'ultimo dato reale"
+    console.error('[CampaniaGplDataSource] Entrambe le fonti di rete hanno fallito:', error);
+
+    // Se esiste la cache precedente, usala (regola testo.txt: resta l'ultimo dato reale)
     if (memoryCache) {
       return {
         stations: memoryCache.data,
         stats: memoryCache.stats,
+        activeSource: memoryCache.activeSource,
+        sourceDescription: `${memoryCache.sourceDescription} (Persistenza offline)`,
+        primaryEndpoint: OSSERVAPREZZI_API_ENDPOINT,
+        secondaryEndpoint: MIMIT_CSV_ENDPOINT,
       };
     }
-    // Otherwise fallback to simulated Campania seed data
-    return getFallbackCampaniaData();
+
+    const fallback = getFallbackCampaniaData();
+    return {
+      stations: fallback.stations,
+      stats: fallback.stats,
+      activeSource: 'MEMORY_CACHE',
+      sourceDescription: 'Dati di emergenza Campania',
+      primaryEndpoint: OSSERVAPREZZI_API_ENDPOINT,
+      secondaryEndpoint: MIMIT_CSV_ENDPOINT,
+    };
   }
 }
 

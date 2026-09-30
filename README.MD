@@ -63,9 +63,21 @@ npm run start
 
 ---
 
-## 🏛️ Attribuzioni e Fonti Dati
-- **Dati Ufficiali Carburanti:** [MIMIT Open Data](https://www.mimit.gov.it/it/open-data/dati-carburanti) - Ministero delle Imprese e del Made in Italy ex D.M. 12/03/2009.
-- **Portale Ministeriale di Ricerca per Zona:** [MIMIT Osservaprezzi Zona](https://carburanti.mise.gov.it/ospzSearch/zona).
-- **Cartografia:** © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
-- **Articolo di Riferimento 1:** [Il Sole 24 Ore - Price Cap Eni, IP e Q8](https://www.ilsole24ore.com/art/caro-carburante-eni-anche-ip-fa-scattare-sconti-ecco-quanto-si-puo-risparmiare-AJBhWzQB).
-- **Articolo di Riferimento 2:** [inSella.it - È il giorno della benzina sotto i 2 euro: dove sono i distributori a prezzo scontato](https://www.insella.it/news/il-giorno-della-benzina-sotto-2-euro-dove-sono-distributori-prezzo-scontato-78577).
+## 🏛️ Attribuzioni e Architettura Fonti Dati
+
+L'applicazione integra un'architettura a **doppia fonte ufficiale** con fallback automatico e cache a 15 minuti:
+
+1. **Fonte Primaria (Live):**
+   - **API Osservaprezzi Carburanti:** `https://carburanti.mise.gov.it/ospzApi/search/area`
+   - Interroga in parallelo le 5 province campane (Napoli, Salerno, Caserta, Avellino, Benevento).
+2. **Fonte Secondaria (Fallback Automatico):**
+   - **Open Data MIMIT CSV:** `https://www.mimit.gov.it/images/exportCSV/` (`anagrafica_impianti_attivi.csv` e `prezzo_alle_8.csv`).
+   - Si attiva in caso di timeout, rate limit o indisponibilità temporanea dell'endpoint primario.
+3. **Persistenza & Resilienza:**
+   - In caso di temporaneo blackout di rete di entrambe le fonti, il sistema mantiene in memoria l'ultimo dato reale valido verificato senza azzerare i listini.
+4. **Cartografia:**
+   - © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+5. **Articoli e Fonti Giornalistiche di Riferimento:**
+   - [Il Sole 24 Ore - Price Cap Eni, IP e Q8](https://www.ilsole24ore.com/art/caro-carburante-eni-anche-ip-fa-scattare-sconti-ecco-quanto-si-puo-risparmiare-AJBhWzQB)
+   - [inSella.it - È il giorno della benzina sotto i 2 euro: dove sono i distributori a prezzo scontato](https://www.insella.it/news/il-giorno-della-benzina-sotto-2-euro-dove-sono-distributori-prezzo-scontato-78577)
+   - [Portale Ministeriale Osservaprezzi MIMIT](https://carburanti.mise.gov.it/ospzSearch/zona)
