@@ -106,10 +106,18 @@ export const StationCard: React.FC<StationCardProps> = ({ station, selectedFuel 
         <div className="flex items-center justify-between gap-1 text-xs text-slate-500 mt-1">
           <div className="flex items-center gap-1 truncate">
             <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-            <span className="truncate">
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                `${station.brand} ${station.name}, ${station.address}, ${station.city}`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="truncate hover:text-emerald-700 hover:underline"
+              title="Vedi posizione esatta su Google Maps"
+            >
               {station.address ? `${station.address}, ` : ''}
               <strong>{station.city}</strong> ({station.province})
-            </span>
+            </a>
           </div>
 
           {typeof station.distanceKm === 'number' && (

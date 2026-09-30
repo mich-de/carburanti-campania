@@ -29,7 +29,13 @@ L'applicazione web consente agli automobilisti e cittadini della **Campania** di
    - La libreria `leaflet` accede direttamente a `window` e `document`. L'uso di dynamic imports asincroni all'interno del ciclo di vita di un componente SSR provocava `ChunkLoadError` durante i reload veloci di Next.js.
    - Soluzione: `StationMap` è stata isolata e caricata in [src/app/page.tsx](file:///D:/web-carburanti/src/app/page.tsx) tramite `next/dynamic(() => import('@/components/StationMap'), { ssr: false })` con fallback skeleton UI, eliminando qualsiasi tentativo di pre-rendering server-side e garantendo caricamento affidabile al 100%.
 
-5. **Identità Git:**
+5. **Normalizzazione Indirizzi e Precisione Google Maps:**
+   - Negli Open Data MIMIT molti indirizzi presentano toponimi tronchi o mancanti (es. `ITALIA 10/A` anziché `Corso Italia 10/A`, `DEI PLATANI SNC` anziché `Via dei Platani SNC`, `DELLE ROSE 14`, `R. BOSCO 53`, `P.ZZA CIRCUMVESUVIANA`), CAP errati (es. `80053` per Piano di Sorrento) o CAP accodati senza formattazione.
+   - Implementata la funzione `normalizeStationAddress` e il dizionario verificato `PENISOLA_SORRENTINA_OVERRIDES` per tutti i 22 impianti della costiera con toponomastica esatta e coordinate GPS millimetriche.
+   - Aggiornati i link di navigazione: l'indirizzo mostrato sulle card e nella tabella è ora cliccabile con query di ricerca Google Maps esatta (`https://www.google.com/maps/search/?api=1&query=...`), mentre il pulsante "Naviga" avvia la navigazione turn-by-turn con le coordinate verificate.
+
+6. **Identità Git:**
    - `user.name`: `mich-de`
    - `user.email`: `mic.deangelis@gmail.com`
+
 

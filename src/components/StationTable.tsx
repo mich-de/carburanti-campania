@@ -47,7 +47,17 @@ export const StationTable: React.FC<StationTableProps> = ({ stations, selectedFu
                     <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
                       <span className="font-semibold text-slate-700">{st.brand}</span>
                       <span>•</span>
-                      <span className="truncate max-w-[180px]">{st.address}</span>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                          `${st.brand} ${st.name}, ${st.address}, ${st.city}`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="truncate max-w-[200px] hover:text-emerald-700 hover:underline"
+                        title="Vedi posizione esatta su Google Maps"
+                      >
+                        {st.address}
+                      </a>
                     </div>
                   </td>
 

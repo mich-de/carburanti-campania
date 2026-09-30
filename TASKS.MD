@@ -13,6 +13,8 @@
 - [x] Sviluppo parser streaming CSV MIMIT per anagrafica e prezzi
 - [x] Filtro geolocalizzato esclusivo per le 5 province campane (NA, SA, CE, AV, BN)
 - [x] Regola di sanitizzazione: scarto o flag `N/D` per prezzi <= 0.0 e sentinelle test (conformità a `testo.txt`)
+- [x] Normalizzazione avanzata indirizzi MIMIT (rimozione CAP attaccati, espansione prefissi stradali come Corso Italia, Via delle Rose, Via dei Platani, Via Raffaele Bosco)
+- [x] Tabella di override geolocalizzata e verificata per tutti i 22 distributori della Penisola Sorrentina (coordinate esatte e toponomastica corretta)
 - [x] Cache serverless e HTTP header con TTL 15 minuti (`s-maxage=900`)
 - [x] Endpoint `/api/fuel` con supporto a query params (`provincia`, `carburante`, `onlyUnder2`, `brand`, `onlySelf`, `search`)
 - [x] Calcolo statistiche di riepilogo regionali e provinciali

@@ -62,6 +62,244 @@ function cleanBrand(brand: string): string {
   return b;
 }
 
+export interface StationOverride {
+  cleanName?: string;
+  cleanBrand?: string;
+  cleanAddress: string;
+  cleanCity?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+// Curated accurate address and pinpoint coordinates dictionary for Penisola Sorrentina
+export const PENISOLA_SORRENTINA_OVERRIDES: Record<string, StationOverride> = {
+  // MASSA LUBRENSE
+  '48998': {
+    cleanName: 'ESSO - VIA REOLA',
+    cleanBrand: 'Esso',
+    cleanAddress: 'Via Reola SNC (Sant\'Agata sui Due Golfi)',
+    cleanCity: 'Massa Lubrense',
+    latitude: 40.605627,
+    longitude: 14.371727,
+  },
+  '44201': {
+    cleanName: 'Agip Eni 08011',
+    cleanBrand: 'Eni',
+    cleanAddress: 'Corso Sant\'Agata 59 (Sant\'Agata sui Due Golfi)',
+    cleanCity: 'Massa Lubrense',
+    latitude: 40.606290,
+    longitude: 14.374524,
+  },
+  '36038': {
+    cleanName: 'MASA Carburanti',
+    cleanBrand: 'Pompe Bianche',
+    cleanAddress: 'Via Reola 2 (Sant\'Agata sui Due Golfi)',
+    cleanCity: 'Massa Lubrense',
+    latitude: 40.605524,
+    longitude: 14.372706,
+  },
+
+  // SANT'AGNELLO
+  '19655': {
+    cleanName: 'Stazione Ranzo Mario',
+    cleanBrand: 'Eni',
+    cleanAddress: 'Corso Italia 10/A',
+    cleanCity: "Sant'Agnello",
+    latitude: 40.629472,
+    longitude: 14.393632,
+  },
+  '57238': {
+    cleanName: 'Celentano Michele',
+    cleanBrand: 'Pompe Bianche',
+    cleanAddress: 'Corso Italia SS 145 Km 25.3 SNC',
+    cleanCity: "Sant'Agnello",
+    latitude: 40.629453,
+    longitude: 14.394296,
+  },
+  '45927': {
+    cleanName: 'Gargiulo Giuseppe',
+    cleanBrand: 'Pompe Bianche',
+    cleanAddress: 'Via Aniello Balsamo SNC',
+    cleanCity: "Sant'Agnello",
+    latitude: 40.630450,
+    longitude: 14.399621,
+  },
+
+  // SORRENTO
+  '9003': {
+    cleanName: 'Q8 Via degli Aranci',
+    cleanBrand: 'Q8',
+    cleanAddress: 'Via degli Aranci 43',
+    cleanCity: 'Sorrento',
+    latitude: 40.625125,
+    longitude: 14.379843,
+  },
+  '35993': {
+    cleanName: 'Agip Eni 08144',
+    cleanBrand: 'Eni',
+    cleanAddress: 'Corso Italia 279',
+    cleanCity: 'Sorrento',
+    latitude: 40.626652,
+    longitude: 14.382115,
+  },
+  '15676': {
+    cleanName: 'Romeo Carburanti',
+    cleanBrand: 'Esso',
+    cleanAddress: 'Corso Italia 248',
+    cleanCity: 'Sorrento',
+    latitude: 40.628008,
+    longitude: 14.386208,
+  },
+  '62633': {
+    cleanName: 'Prestige Oil (Cappiello)',
+    cleanBrand: 'IP',
+    cleanAddress: 'Corso Italia 321/D',
+    cleanCity: 'Sorrento',
+    latitude: 40.627330,
+    longitude: 14.384389,
+  },
+  '15163': {
+    cleanName: 'Sciardò S.n.c.',
+    cleanBrand: 'Esso',
+    cleanAddress: 'Via del Mare 36 (Marina Grande)',
+    cleanCity: 'Sorrento',
+    latitude: 40.624436,
+    longitude: 14.369084,
+  },
+
+  // PIANO DI SORRENTO
+  '60927': {
+    cleanName: 'Easy Service S.r.l.',
+    cleanBrand: 'Energas',
+    cleanAddress: 'Via Guglielmo Maresca 33',
+    cleanCity: 'Piano di Sorrento',
+    latitude: 40.629300,
+    longitude: 14.416120,
+  },
+  '53021': {
+    cleanName: 'Al.Ma. Pollio',
+    cleanBrand: 'IP',
+    cleanAddress: 'Via delle Rose 14',
+    cleanCity: 'Piano di Sorrento',
+    latitude: 40.632389,
+    longitude: 14.409599,
+  },
+  '32489': {
+    cleanName: 'Servizi & Gestioni',
+    cleanBrand: 'Q8',
+    cleanAddress: 'Corso Italia 27',
+    cleanCity: 'Piano di Sorrento',
+    latitude: 40.630408,
+    longitude: 14.403443,
+  },
+  '15263': {
+    cleanName: 'De Gennaro Salvatore',
+    cleanBrand: 'Esso',
+    cleanAddress: 'Via dei Platani SNC',
+    cleanCity: 'Piano di Sorrento',
+    latitude: 40.633196,
+    longitude: 14.417364,
+  },
+  '20620': {
+    cleanName: 'Antonino Di Palma',
+    cleanBrand: 'Esso',
+    cleanAddress: 'Corso Italia SS 145 Km 24.5 SNC',
+    cleanCity: 'Piano di Sorrento',
+    latitude: 40.630438,
+    longitude: 14.403996,
+  },
+  '27511': {
+    cleanName: 'Astarita S.a.s.',
+    cleanBrand: 'IP',
+    cleanAddress: 'Via dei Platani 44',
+    cleanCity: 'Piano di Sorrento',
+    latitude: 40.631945,
+    longitude: 14.416283,
+  },
+
+  // META
+  '55884': {
+    cleanName: 'UNOIL Meta',
+    cleanBrand: 'Pompe Bianche',
+    cleanAddress: 'Corso Italia 150',
+    cleanCity: 'Meta',
+    latitude: 40.639444,
+    longitude: 14.418876,
+  },
+  '31833': {
+    cleanName: 'Tiber (Orvetti Felice)',
+    cleanBrand: 'Loro',
+    cleanAddress: 'Via del Lauro 7',
+    cleanCity: 'Meta',
+    latitude: 40.641578,
+    longitude: 14.418325,
+  },
+
+  // VICO EQUENSE
+  '39801': {
+    cleanName: 'Pit Stop',
+    cleanBrand: 'Pompe Bianche',
+    cleanAddress: 'Via Raffaele Bosco 429',
+    cleanCity: 'Vico Equense',
+    latitude: 40.655923,
+    longitude: 14.458397,
+  },
+  '35899': {
+    cleanName: 'P.zza Circumvesuviana',
+    cleanBrand: 'Q8',
+    cleanAddress: 'Piazza Circumvesuviana 2 (Corso Umberto I)',
+    cleanCity: 'Vico Equense',
+    latitude: 40.662894,
+    longitude: 14.429528,
+  },
+  '16081': {
+    cleanName: 'Guida Giovanni',
+    cleanBrand: 'Energas',
+    cleanAddress: 'Via Raffaele Bosco 53',
+    cleanCity: 'Vico Equense',
+    latitude: 40.660620,
+    longitude: 14.433439,
+  },
+};
+
+// General address normalization for all Campania stations
+export function normalizeStationAddress(rawAddress: string, _rawCity: string): string {
+  if (!rawAddress) return '';
+  let addr = rawAddress.trim();
+
+  // Strip trailing 5-digit CAP attached without comma (e.g. " 80061")
+  addr = addr.replace(/\s+\d{5}$/, '').trim();
+  // Strip duplicate whitespace
+  addr = addr.replace(/\s+/g, ' ');
+
+  // Standardize common Italian abbreviations and missing prefixes
+  if (/^ITALIA\b/i.test(addr)) {
+    addr = addr.replace(/^ITALIA\b/i, 'Corso Italia');
+  } else if (/^DEI PLATANI\b/i.test(addr)) {
+    addr = addr.replace(/^DEI PLATANI\b/i, 'Via dei Platani');
+  } else if (/^DELLE ROSE\b/i.test(addr)) {
+    addr = addr.replace(/^DELLE ROSE\b/i, 'Via delle Rose');
+  } else if (/^R\.?\s*BOSCO\b/i.test(addr)) {
+    addr = addr.replace(/^R\.?\s*BOSCO\b/i, 'Via Raffaele Bosco');
+  } else if (/^C\.?SO\s+/i.test(addr)) {
+    addr = addr.replace(/^C\.?SO\s+/i, 'Corso ');
+  } else if (/^P\.?ZZA\s+/i.test(addr)) {
+    addr = addr.replace(/^P\.?ZZA\s+/i, 'Piazza ');
+  } else if (/^V\.?LE\s+/i.test(addr)) {
+    addr = addr.replace(/^V\.?LE\s+/i, 'Viale ');
+  } else if (/^STR\.?\s+/i.test(addr)) {
+    addr = addr.replace(/^STR\.?\s+/i, 'Strada ');
+  }
+
+  // Normalize highway & state road abbreviations
+  addr = addr.replace(/\bS\.?S\.?\s*/gi, 'SS ');
+  addr = addr.replace(/\bS\.?P\.?\s*/gi, 'SP ');
+  addr = addr.replace(/\bKM\.?\s*([0-9+.]+)/gi, 'Km $1');
+  addr = addr.replace(/\bSNC\b/gi, 'SNC');
+
+  return addr;
+}
+
 export async function fetchCampaniaFuelData(forceRefresh = false): Promise<{
   stations: GasStation[];
   stats: FuelStats;
@@ -139,21 +377,29 @@ export async function fetchCampaniaFuelData(forceRefresh = false): Promise<{
       const lng = parseFloat(lngRaw);
 
       // Follow ID convention from testo.txt: gpl_mimit_* for official source
-      const id = `gpl_mimit_${idRaw.trim()}`;
       const mimitId = idRaw.trim();
+      const id = `gpl_mimit_${mimitId}`;
 
-      stationMap.set(idRaw.trim(), {
+      const override = PENISOLA_SORRENTINA_OVERRIDES[mimitId];
+      const finalAddress = override?.cleanAddress || normalizeStationAddress(address || '', city || '');
+      const finalCity = override?.cleanCity || (city ? city.trim() : '');
+      const finalName = override?.cleanName || (name ? name.trim() : `Distributore ${idRaw}`);
+      const finalBrand = override?.cleanBrand || cleanBrand(brand);
+      const finalLat = override?.latitude ?? (isNaN(lat) ? 0 : lat);
+      const finalLng = override?.longitude ?? (isNaN(lng) ? 0 : lng);
+
+      stationMap.set(mimitId, {
         id,
         mimitId,
-        name: name ? name.trim() : `Distributore ${idRaw}`,
+        name: finalName,
         operator: operator ? operator.trim() : '',
-        brand: cleanBrand(brand),
+        brand: finalBrand,
         stationType: stationType ? stationType.trim() : 'Stradale',
-        address: address ? address.trim() : '',
-        city: city ? city.trim() : '',
+        address: finalAddress,
+        city: finalCity,
         province: prov as 'NA' | 'SA' | 'CE' | 'AV' | 'BN',
-        latitude: isNaN(lat) ? 0 : lat,
-        longitude: isNaN(lng) ? 0 : lng,
+        latitude: finalLat,
+        longitude: finalLng,
         prices: [],
         minPrice: 999,
         hasUnder2Euro: false,
