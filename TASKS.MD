@@ -20,9 +20,13 @@
 ### [FRONTEND] Dashboard & Interfaccia Utente
 - [x] Header moderno con badge live status, notizia Price Cap e ultimo aggiornamento MIMIT
 - [x] Summary KPI Cards (Distributori < 2€, Prezzo Min Benzina/Diesel, Medie e minimi regionali)
-- [x] Barra di ricerca rapida (comune, indirizzo, gestore) e filtri avanzati
+- [x] Filtro territoriale dedicato **Penisola Sorrentina** (Massa Lubrense, Sorrento, Sant'Agnello, Piano di Sorrento, Meta, Vico Equense)
+- [x] Default "Solo Self-service" attivato all'avvio
+- [x] Componente **Legenda** interattiva per simboli, listini multipli e colori brand
+- [x] Ricerca intelligente (boundary match per "Meta", feedback esplicito con pulsante di reset filtri)
 - [x] Vista Card Impianto (dettaglio prezzi, bandiera, indicatore distanza, navigatore Google Maps)
 - [x] Vista Tabellare comparativa / classifica
 - [x] Mappa interattiva Leaflet con pin personalizzati per brand e badge prezzo sotto 2€
+- [x] Risoluzione `ChunkLoadError` di Leaflet tramite `next/dynamic` client-only SSR false e strict typing
 - [x] Banner informativo con approfondimento sull'articolo de *Il Sole 24 Ore* (Price Cap Eni, IP, Q8)
 - [x] Responsive layout completo per smartphone e desktop

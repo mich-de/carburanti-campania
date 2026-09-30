@@ -25,6 +25,11 @@ L'applicazione web consente agli automobilisti e cittadini della **Campania** di
    - TTL di 15 minuti su cache in memoria lato serverless Next.js + Header HTTP `Cache-Control: s-maxage=900, stale-while-revalidate=1800`.
    - Riduzione del traffico verso i server MIMIT e risposte istantanee (< 50ms) per i client Vercel.
 
-4. **Identità Git:**
+4. **Risoluzione ChunkLoadError Leaflet:**
+   - La libreria `leaflet` accede direttamente a `window` e `document`. L'uso di dynamic imports asincroni all'interno del ciclo di vita di un componente SSR provocava `ChunkLoadError` durante i reload veloci di Next.js.
+   - Soluzione: `StationMap` è stata isolata e caricata in [src/app/page.tsx](file:///D:/web-carburanti/src/app/page.tsx) tramite `next/dynamic(() => import('@/components/StationMap'), { ssr: false })` con fallback skeleton UI, eliminando qualsiasi tentativo di pre-rendering server-side e garantendo caricamento affidabile al 100%.
+
+5. **Identità Git:**
    - `user.name`: `mich-de`
    - `user.email`: `mic.deangelis@gmail.com`
+

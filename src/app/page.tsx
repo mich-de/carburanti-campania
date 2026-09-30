@@ -9,9 +9,22 @@ import { Legenda } from '@/components/Legenda';
 import { Filters, ViewMode } from '@/components/Filters';
 import { StationCard } from '@/components/StationCard';
 import { StationTable } from '@/components/StationTable';
-import { StationMap } from '@/components/StationMap';
 import { Footer } from '@/components/Footer';
 import { AlertCircle, Loader2, Sparkles, FilterX, Info } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const StationMap = dynamic(
+  () => import('@/components/StationMap').then((mod) => mod.StationMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[520px] rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-medium">
+        <Loader2 className="w-6 h-6 animate-spin text-emerald-600 mr-2" />
+        <span>Caricamento mappa OpenStreetMap...</span>
+      </div>
+    ),
+  }
+);
 
 function computeHaversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth radius in km
