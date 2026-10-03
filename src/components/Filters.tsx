@@ -34,6 +34,8 @@ interface FiltersProps {
   priceCapAvailable?: boolean;
   onlySelf: boolean;
   onToggleSelf: (val: boolean) => void;
+  // false con il GPL: in Italia non è self-service, quindi il filtro si nasconde
+  selfAvailable?: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   viewMode: ViewMode;
@@ -44,6 +46,8 @@ interface FiltersProps {
   isLocating: boolean;
   sortByDistance: boolean;
   onToggleSortByDistance: (val: boolean) => void;
+  // Classi di layout decise dalla pagina (per esempio l'ordine su smartphone)
+  className?: string;
 }
 
 const PROVINCES = [
@@ -97,6 +101,7 @@ export const Filters: React.FC<FiltersProps> = ({
   priceCapAvailable = true,
   onlySelf,
   onToggleSelf,
+  selfAvailable = true,
   searchQuery,
   onSearchChange,
   viewMode,
@@ -107,6 +112,7 @@ export const Filters: React.FC<FiltersProps> = ({
   isLocating,
   sortByDistance,
   onToggleSortByDistance,
+  className = '',
 }) => {
   // Su smartphone ambito, provincia e marchio restano chiusi finché non servono (il carburante è sempre visibile)
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
@@ -117,8 +123,32 @@ export const Filters: React.FC<FiltersProps> = ({
     (selectedBrand !== 'all' ? 1 : 0);
 
   return (
-    <div className="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm mb-4 sm:mb-6 space-y-3 sm:space-y-4">
-      {/* 0. Solo smartphone: apre e chiude i filtri avanzati */}
+    <div
+      className={`bg-white rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm mb-4 sm:mb-6 space-y-3 sm:space-y-4 ${className}`}
+    >
+      {/* 0. Tipo carburante su smartphone: in cima e sempre visibile (sul desktop c'è il menu a tendina) */}
+      <div className="sm:hidden space-y-1.5">
+        <span className="block text-[11px] font-bold uppercase tracking-wide text-slate-500">Carburante</span>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tipo carburante">
+          {FUEL_CHIPS.map((f) => (
+            <button
+              key={f.type}
+              type="button"
+              onClick={() => onFuelChange(f.type)}
+              aria-pressed={selectedFuel === f.type}
+              className={`min-h-10 px-3.5 rounded-full border text-xs font-bold transition active:scale-95 ${
+                selectedFuel === f.type
+                  ? 'bg-slate-900 border-slate-900 text-white'
+                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 1. Solo smartphone: apre e chiude i filtri avanzati */}
       <button
         type="button"
         onClick={() => setShowAdvanced((v) => !v)}
@@ -141,7 +171,7 @@ export const Filters: React.FC<FiltersProps> = ({
         </span>
       </button>
 
-      {/* 1. Ambito Territoriale In Evidenza (Filtro Penisola Sorrentina Estetico & Moderno) */}
+      {/* 2. Ambito Territoriale In Evidenza (Filtro Penisola Sorrentina Estetico & Moderno) */}
       <div
         className={`${showAdvanced ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-50 via-sky-50/50 to-emerald-50/40 p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-sm`}
       >
@@ -218,7 +248,7 @@ export const Filters: React.FC<FiltersProps> = ({
         </div>
       </div>
 
-      {/* 2. Search input + GPS button + View Mode switcher */}
+      {/* 3. Search input + GPS button + View Mode switcher */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -291,25 +321,6 @@ export const Filters: React.FC<FiltersProps> = ({
         </div>
       </div>
 
-      {/* 3. Tipo carburante su smartphone: pulsanti sempre visibili (sul desktop c'è il menu a tendina) */}
-      <div className="sm:hidden flex flex-wrap gap-1.5" role="group" aria-label="Tipo carburante">
-        {FUEL_CHIPS.map((f) => (
-          <button
-            key={f.type}
-            type="button"
-            onClick={() => onFuelChange(f.type)}
-            aria-pressed={selectedFuel === f.type}
-            className={`min-h-10 px-3.5 rounded-full border text-xs font-bold transition active:scale-95 ${
-              selectedFuel === f.type
-                ? 'bg-slate-900 border-slate-900 text-white'
-                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
       {/* 4. Selectors & Toggles: su smartphone provincia e marchio seguono "Filtri avanzati" */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Province Selector (disabled when Penisola Sorrentina is active) */}
@@ -340,7 +351,7 @@ export const Filters: React.FC<FiltersProps> = ({
           </select>
         </div>
 
-        {/* Fuel Type Selector: su smartphone ci sono i pulsanti sopra */}
+        {/* Fuel Type Selector: su smartphone ci sono i pulsanti in cima */}
         <div className="hidden sm:block">
           <label className="block text-xs font-semibold text-slate-600 mb-1">
             Tipo Carburante
@@ -379,7 +390,7 @@ export const Filters: React.FC<FiltersProps> = ({
         {/* 3 Dedicated Key Toggles: Accordo Price Cap (Default), Tutti < 2€, Self-Service (Default). Sempre visibili */}
         <div className="flex flex-col justify-center gap-1 sm:gap-1.5 bg-slate-50/80 p-2.5 rounded-lg border border-slate-200/70">
           {/* Toggle 1: Aderenti Price Cap (Eni, IP, Q8, Esso) - DEFAULT ATTIVO. Esiste solo per la benzina */}
-          {priceCapAvailable ? (
+          {priceCapAvailable && (
             <label className="relative flex items-center justify-between gap-2 min-h-10 sm:min-h-0 py-1 sm:py-0 cursor-pointer select-none">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-amber-600 shrink-0" />
@@ -402,9 +413,13 @@ export const Filters: React.FC<FiltersProps> = ({
                 <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-600"></div>
               </div>
             </label>
-          ) : (
+          )}
+
+          {(!priceCapAvailable || !selfAvailable) && (
             <p className="text-[11px] text-slate-500 leading-snug">
-              Il tetto Price Cap riguarda solo la benzina: per questo carburante il filtro è disattivato.
+              {!selfAvailable
+                ? 'Il GPL in Italia non è self-service e il Price Cap riguarda solo la benzina: per questo carburante i due filtri sono disattivati.'
+                : 'Il tetto Price Cap riguarda solo la benzina: per questo carburante il filtro è disattivato.'}
             </p>
           )}
 
@@ -432,22 +447,24 @@ export const Filters: React.FC<FiltersProps> = ({
             </div>
           </label>
 
-          {/* Toggle 3: Solo Self-Service - DEFAULT ATTIVO */}
-          <label className="relative flex items-center justify-between gap-2 min-h-10 sm:min-h-0 py-1 sm:py-0 cursor-pointer select-none">
-            <span className="text-xs font-semibold text-slate-700 flex items-center gap-1">
-              <span>Solo Self-Service</span>
-              <span className="text-[10px] text-slate-600 bg-slate-200 px-1 rounded font-mono">SELF</span>
-            </span>
-            <div className="relative shrink-0">
-              <input
-                type="checkbox"
-                checked={onlySelf}
-                onChange={(e) => onToggleSelf(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-slate-800"></div>
-            </div>
-          </label>
+          {/* Toggle 3: Solo Self-Service - DEFAULT ATTIVO. Non esiste per il GPL */}
+          {selfAvailable && (
+            <label className="relative flex items-center justify-between gap-2 min-h-10 sm:min-h-0 py-1 sm:py-0 cursor-pointer select-none">
+              <span className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                <span>Solo Self-Service</span>
+                <span className="text-[10px] text-slate-600 bg-slate-200 px-1 rounded font-mono">SELF</span>
+              </span>
+              <div className="relative shrink-0">
+                <input
+                  type="checkbox"
+                  checked={onlySelf}
+                  onChange={(e) => onToggleSelf(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-slate-800"></div>
+              </div>
+            </label>
+          )}
         </div>
       </div>
 

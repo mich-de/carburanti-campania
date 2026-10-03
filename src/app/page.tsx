@@ -61,6 +61,9 @@ export default function HomePage() {
   // Il tetto Accordo Price Cap riguarda solo la benzina: con gasolio, GPL o metano il filtro non si applica
   const priceCapApplies = selectedFuel === 'all' || selectedFuel === 'Benzina';
   const effectiveOnlyPriceCap = onlyPriceCap && priceCapApplies;
+  // Il GPL in Italia non è self-service: con il GPL il filtro Solo Self-Service non si applica
+  const selfApplies = selectedFuel !== 'GPL';
+  const effectiveOnlySelf = onlySelf && selfApplies;
 
   // Search Feedback when price cap or self excludes searched town
   const [searchFeedback, setSearchFeedback] = useState<{
@@ -90,7 +93,7 @@ export default function HomePage() {
         brand: selectedBrand,
         onlyUnder2: onlyUnder2 ? 'true' : 'false',
         onlyPriceCap: effectiveOnlyPriceCap ? 'true' : 'false',
-        onlySelf: onlySelf ? 'true' : 'false',
+        onlySelf: effectiveOnlySelf ? 'true' : 'false',
         search: searchQuery,
       });
 
@@ -118,7 +121,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProvince, selectedTerritory, selectedFuel, selectedBrand, onlyUnder2, effectiveOnlyPriceCap, onlySelf, searchQuery]);
+  }, [selectedProvince, selectedTerritory, selectedFuel, selectedBrand, onlyUnder2, effectiveOnlyPriceCap, effectiveOnlySelf, searchQuery]);
 
   // Load data when filters change (debounced for search)
   useEffect(() => {
@@ -232,7 +235,7 @@ export default function HomePage() {
       </div>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1 w-full flex flex-col">
         {/* 3. KPI Statistics Banner */}
         <StatsBanner
           stats={stats}
@@ -258,7 +261,9 @@ export default function HomePage() {
           onlyPriceCap={effectiveOnlyPriceCap}
           priceCapAvailable={priceCapApplies}
           onTogglePriceCap={setOnlyPriceCap}
-          onlySelf={onlySelf}
+          onlySelf={effectiveOnlySelf}
+          selfAvailable={selfApplies}
+          className="order-first sm:order-none"
           onToggleSelf={setOnlySelf}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
