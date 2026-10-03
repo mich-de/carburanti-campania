@@ -30,7 +30,7 @@ export const NewsBanner: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto shrink-0">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-amber-900 hover:text-amber-700 transition px-2.5 py-1 rounded bg-amber-100/70 hover:bg-amber-200/70"
+              className="inline-flex items-center gap-1 min-h-9 text-xs font-semibold text-amber-900 hover:text-amber-700 transition px-3 py-1.5 rounded bg-amber-100/70 hover:bg-amber-200/70"
             >
               <span>{isExpanded ? 'Chiudi dettagli' : 'Dettagli & Fonti'}</span>
               {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -40,7 +40,7 @@ export const NewsBanner: React.FC = () => {
               href="https://carburanti.mise.gov.it/ospzSearch/zona"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 hover:text-emerald-950 transition px-2 py-1 rounded bg-emerald-100/80 border border-emerald-300"
+              className="inline-flex items-center gap-1 min-h-9 text-xs font-semibold text-emerald-800 hover:text-emerald-950 transition px-2.5 py-1.5 rounded bg-emerald-100/80 border border-emerald-300"
               title="Portale ufficiale Osservaprezzi MIMIT per zona"
             >
               <Compass className="w-3 h-3" />
@@ -55,7 +55,7 @@ export const NewsBanner: React.FC = () => {
           <div className="mt-3 pt-3 border-t border-amber-200/50 text-xs sm:text-sm text-slate-700 space-y-3 animate-fadeIn">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Card 1: inSella report */}
-              <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-xs flex flex-col justify-between">
+              <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-sm flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-1.5 font-bold text-slate-900 mb-1">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -79,7 +79,7 @@ export const NewsBanner: React.FC = () => {
               </div>
 
               {/* Card 2: Il Sole 24 Ore */}
-              <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-xs flex flex-col justify-between">
+              <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-sm flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-1.5 font-bold text-slate-900 mb-1">
                     <CheckCircle2 className="w-4 h-4 text-amber-600" />
@@ -103,7 +103,7 @@ export const NewsBanner: React.FC = () => {
               </div>
 
               {/* Card 3: Doppia Fonte Integrata */}
-              <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-xs flex flex-col justify-between">
+              <div className="bg-white/90 p-3 rounded-lg border border-slate-200/80 shadow-sm flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-1.5 font-bold text-slate-900 mb-1">
                     <Compass className="w-4 h-4 text-teal-600" />

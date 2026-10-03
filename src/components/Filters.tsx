@@ -1,7 +1,18 @@
 'use client';
 
-import React from 'react';
-import { Search, LayoutGrid, Table as TableIcon, Map as MapIcon, Locate, Compass, ShieldCheck, Tag } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Search,
+  LayoutGrid,
+  Table as TableIcon,
+  Map as MapIcon,
+  Locate,
+  Compass,
+  ShieldCheck,
+  Tag,
+  SlidersHorizontal,
+  ChevronDown,
+} from 'lucide-react';
 
 export type ViewMode = 'grid' | 'table' | 'map';
 export type TerritoryMode = 'all' | 'penisola';
@@ -85,12 +96,46 @@ export const Filters: React.FC<FiltersProps> = ({
   sortByDistance,
   onToggleSortByDistance,
 }) => {
+  // Su smartphone ambito, provincia, carburante e marchio restano chiusi finché non servono
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+
+  const advancedActiveCount =
+    (selectedTerritory !== 'all' ? 1 : 0) +
+    (selectedProvince !== 'all' ? 1 : 0) +
+    (selectedFuel !== 'all' ? 1 : 0) +
+    (selectedBrand !== 'all' ? 1 : 0);
+
   return (
-    <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs mb-6 space-y-4">
+    <div className="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 shadow-sm mb-4 sm:mb-6 space-y-3 sm:space-y-4">
+      {/* 0. Solo smartphone: apre e chiude i filtri avanzati */}
+      <button
+        type="button"
+        onClick={() => setShowAdvanced((v) => !v)}
+        aria-expanded={showAdvanced}
+        className="sm:hidden w-full min-h-11 flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-800 transition active:scale-[0.99]"
+      >
+        <span className="flex items-center gap-2">
+          <SlidersHorizontal className="w-4 h-4 text-slate-600" />
+          <span>Filtri avanzati</span>
+        </span>
+        <span className="flex items-center gap-2">
+          {advancedActiveCount > 0 && (
+            <span className="text-[11px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+              {advancedActiveCount} attivi
+            </span>
+          )}
+          <ChevronDown
+            className={`w-4 h-4 text-slate-600 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+          />
+        </span>
+      </button>
+
       {/* 1. Ambito Territoriale In Evidenza (Filtro Penisola Sorrentina Estetico & Moderno) */}
-      <div className="bg-gradient-to-r from-slate-50 via-sky-50/50 to-emerald-50/40 p-3 sm:p-3.5 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      <div
+        className={`${showAdvanced ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-50 via-sky-50/50 to-emerald-50/40 p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-sm`}
+      >
         <div className="flex items-center gap-2.5">
-          <span className="p-2 rounded-lg bg-white border border-slate-200/80 shadow-xs text-sky-700 shrink-0">
+          <span className="p-2 rounded-lg bg-white border border-slate-200/80 shadow-sm text-sky-700 shrink-0">
             <Compass className="w-4 h-4" />
           </span>
           <div>
@@ -114,19 +159,21 @@ export const Filters: React.FC<FiltersProps> = ({
           </div>
         </div>
 
-        {/* Territory Switcher Segmented Control */}
-        <div className="inline-flex p-1 bg-white rounded-xl border border-slate-200/90 shadow-xs self-start sm:self-auto shrink-0 gap-1">
+        {/* Territory Switcher Segmented Control: a tutta larghezza su smartphone */}
+        <div className="grid grid-cols-2 sm:inline-flex w-full sm:w-auto p-1 bg-white rounded-xl border border-slate-200/90 shadow-sm self-stretch sm:self-auto shrink-0 gap-1">
           <button
+            type="button"
             onClick={() => onTerritoryChange('all')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 select-none ${
+            aria-pressed={selectedTerritory === 'all'}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 min-h-11 sm:min-h-0 px-2 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all select-none ${
               selectedTerritory === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-slate-900 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <span>🏛️ Tutta la Campania</span>
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
                 selectedTerritory === 'all' ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'
               }`}
             >
@@ -135,11 +182,13 @@ export const Filters: React.FC<FiltersProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => {
               onTerritoryChange('penisola');
               onProvinceChange('all');
             }}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 select-none ${
+            aria-pressed={selectedTerritory === 'penisola'}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 min-h-11 sm:min-h-0 px-2 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all select-none ${
               selectedTerritory === 'penisola'
                 ? 'bg-gradient-to-r from-sky-600 to-teal-600 text-white shadow-md ring-2 ring-sky-300'
                 : 'text-slate-600 hover:text-sky-700 hover:bg-sky-50'
@@ -148,7 +197,7 @@ export const Filters: React.FC<FiltersProps> = ({
           >
             <span>🌊 Penisola Sorrentina</span>
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                 selectedTerritory === 'penisola' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'
               }`}
             >
@@ -167,17 +216,18 @@ export const Filters: React.FC<FiltersProps> = ({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Cerca comune (es. Sorrento, Napoli, Salerno...), via o gestore..."
-            className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+            className="w-full min-h-11 sm:min-h-0 pl-10 pr-4 py-2.5 sm:py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
           />
         </div>
 
         {/* GPS Geolocation Button */}
         <button
+          type="button"
           onClick={onLocateMe}
           disabled={isLocating}
-          className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition active:scale-95 shrink-0 ${
+          className={`inline-flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-11 sm:min-h-0 px-3 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition active:scale-95 shrink-0 ${
             userLocation && sortByDistance
-              ? 'bg-sky-600 text-white shadow-xs'
+              ? 'bg-sky-600 text-white shadow-sm'
               : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
           }`}
           title="Attiva GPS per trovare i distributori più vicini alla tua posizione attuale (guida inSella)"
@@ -187,12 +237,14 @@ export const Filters: React.FC<FiltersProps> = ({
         </button>
 
         {/* View Mode Toggle */}
-        <div className="inline-flex self-start sm:self-auto p-1 bg-slate-100 rounded-lg border border-slate-200 shrink-0">
+        <div className="grid grid-cols-3 sm:inline-flex w-full sm:w-auto self-stretch sm:self-auto p-1 bg-slate-100 rounded-lg border border-slate-200 shrink-0">
           <button
+            type="button"
             onClick={() => onViewModeChange('grid')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+            aria-pressed={viewMode === 'grid'}
+            className={`flex items-center justify-center gap-1.5 whitespace-nowrap [&_svg]:shrink-0 min-h-10 sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 rounded-md text-xs font-semibold transition ${
               viewMode === 'grid'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -200,10 +252,12 @@ export const Filters: React.FC<FiltersProps> = ({
             <span>Schede</span>
           </button>
           <button
+            type="button"
             onClick={() => onViewModeChange('table')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+            aria-pressed={viewMode === 'table'}
+            className={`flex items-center justify-center gap-1.5 whitespace-nowrap [&_svg]:shrink-0 min-h-10 sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 rounded-md text-xs font-semibold transition ${
               viewMode === 'table'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -211,10 +265,12 @@ export const Filters: React.FC<FiltersProps> = ({
             <span>Classifica</span>
           </button>
           <button
+            type="button"
             onClick={() => onViewModeChange('map')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+            aria-pressed={viewMode === 'map'}
+            className={`flex items-center justify-center gap-1.5 whitespace-nowrap [&_svg]:shrink-0 min-h-10 sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 rounded-md text-xs font-semibold transition ${
               viewMode === 'map'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -224,12 +280,12 @@ export const Filters: React.FC<FiltersProps> = ({
         </div>
       </div>
 
-      {/* 3. Selectors & Toggles */}
+      {/* 3. Selectors & Toggles: su smartphone provincia, carburante e marchio seguono "Filtri avanzati" */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Province Selector (disabled when Penisola Sorrentina is active) */}
-        <div>
+        <div className={`${showAdvanced ? 'block' : 'hidden'} sm:block`}>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
-            Provincia della Campania
+            Provincia<span className="hidden sm:inline"> della Campania</span>
           </label>
           <select
             value={selectedProvince}
@@ -240,7 +296,7 @@ export const Filters: React.FC<FiltersProps> = ({
                 onTerritoryChange('all');
               }
             }}
-            className={`w-full text-xs sm:text-sm border border-slate-200 rounded-lg px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+            className={`w-full min-h-11 sm:min-h-0 text-sm border border-slate-200 rounded-lg px-3 py-2.5 sm:py-2 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               selectedTerritory === 'penisola'
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'bg-slate-50 text-slate-800 focus:bg-white'
@@ -255,14 +311,14 @@ export const Filters: React.FC<FiltersProps> = ({
         </div>
 
         {/* Fuel Type Selector */}
-        <div>
+        <div className={`${showAdvanced ? 'block' : 'hidden'} sm:block`}>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
             Tipo Carburante
           </label>
           <select
             value={selectedFuel}
             onChange={(e) => onFuelChange(e.target.value)}
-            className="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+            className="w-full min-h-11 sm:min-h-0 text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 sm:py-2 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
           >
             {FUEL_TYPES.map((f) => (
               <option key={f.type} value={f.type}>
@@ -273,14 +329,14 @@ export const Filters: React.FC<FiltersProps> = ({
         </div>
 
         {/* Brand Selector */}
-        <div>
+        <div className={`${showAdvanced ? 'block' : 'hidden'} sm:block`}>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
             Marchio / Operatore
           </label>
           <select
             value={selectedBrand}
             onChange={(e) => onBrandChange(e.target.value)}
-            className="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+            className="w-full min-h-11 sm:min-h-0 text-sm bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 sm:py-2 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
           >
             {BRANDS.map((b) => (
               <option key={b.code} value={b.code}>
@@ -290,10 +346,10 @@ export const Filters: React.FC<FiltersProps> = ({
           </select>
         </div>
 
-        {/* 3 Dedicated Key Toggles: Accordo Price Cap (Default), Tutti < 2€, Self-Service (Default) */}
-        <div className="flex flex-col justify-center gap-1.5 bg-slate-50/80 p-2.5 rounded-lg border border-slate-200/70">
+        {/* 3 Dedicated Key Toggles: Accordo Price Cap (Default), Tutti < 2€, Self-Service (Default). Sempre visibili */}
+        <div className="flex flex-col justify-center gap-1 sm:gap-1.5 bg-slate-50/80 p-2.5 rounded-lg border border-slate-200/70">
           {/* Toggle 1: Aderenti Price Cap (Eni, IP, Q8, Esso) - DEFAULT ATTIVO */}
-          <label className="relative flex items-center justify-between gap-2 cursor-pointer select-none">
+          <label className="relative flex items-center justify-between gap-2 min-h-10 sm:min-h-0 py-1 sm:py-0 cursor-pointer select-none">
             <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
               <ShieldCheck className="w-3 h-3 text-amber-600 shrink-0" />
               <span>Accordo Price Cap</span>
@@ -317,7 +373,7 @@ export const Filters: React.FC<FiltersProps> = ({
           </label>
 
           {/* Toggle 2: Prezzo < 2.00 € Tutti i gestori (inclusi No Logo / Pompe Bianche) */}
-          <label className="relative flex items-center justify-between gap-2 cursor-pointer select-none">
+          <label className="relative flex items-center justify-between gap-2 min-h-10 sm:min-h-0 py-1 sm:py-0 cursor-pointer select-none">
             <span className="text-xs font-semibold text-slate-700 flex items-center gap-1">
               <Tag className="w-3 h-3 text-emerald-600 shrink-0" />
               <span>Tutti sotto i 2.00 €</span>
@@ -341,7 +397,7 @@ export const Filters: React.FC<FiltersProps> = ({
           </label>
 
           {/* Toggle 3: Solo Self-Service - DEFAULT ATTIVO */}
-          <label className="relative flex items-center justify-between gap-2 cursor-pointer select-none">
+          <label className="relative flex items-center justify-between gap-2 min-h-10 sm:min-h-0 py-1 sm:py-0 cursor-pointer select-none">
             <span className="text-xs font-semibold text-slate-700 flex items-center gap-1">
               <span>Solo Self-Service</span>
               <span className="text-[10px] text-slate-600 bg-slate-200 px-1 rounded font-mono">SELF</span>
@@ -394,6 +450,7 @@ export const Filters: React.FC<FiltersProps> = ({
             onlyUnder2 ||
             userLocation) && (
             <button
+              type="button"
               onClick={() => {
                 onTerritoryChange('all');
                 onProvinceChange('all');
@@ -405,7 +462,7 @@ export const Filters: React.FC<FiltersProps> = ({
                 onToggleUnder2(false);
                 onToggleSortByDistance(false);
               }}
-              className="text-xs text-emerald-700 hover:text-emerald-900 font-medium underline underline-offset-2"
+              className="inline-flex items-center min-h-9 py-1 text-xs text-emerald-700 hover:text-emerald-900 font-medium underline underline-offset-2"
             >
               Ripristina filtri
             </button>

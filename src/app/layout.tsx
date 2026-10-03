@@ -15,10 +15,11 @@ export const metadata: Metadata = {
   ],
 };
 
+// Zoom lasciato attivo (niente maximumScale): chi ha bisogno di ingrandire il testo può farlo
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  themeColor: '#059669',
 };
 
 export default function RootLayout({
@@ -28,15 +29,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="it">
-      <head>
-        {/* Leaflet CSS CDN */}
-        <link
-          rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossOrigin=""
-        />
-      </head>
       <body className="antialiased text-slate-800 bg-slate-50 min-h-screen flex flex-col">
         {children}
       </body>

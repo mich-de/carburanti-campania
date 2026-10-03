@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { GasStation } from '../types/fuel';
 
 interface StationMapProps {
@@ -144,13 +145,13 @@ export const StationMap: React.FC<StationMapProps> = ({ stations, selectedProvin
   }, [stations, selectedProvince, userLocation]);
 
   return (
-    <div className="relative w-full h-[520px] rounded-xl overflow-hidden border border-slate-200 shadow-xs bg-slate-100">
+    <div className="relative w-full h-[60svh] min-h-[320px] sm:h-[520px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
       <div ref={mapContainerRef} className="w-full h-full" />
-      <div className="absolute bottom-3 left-3 z-[1000] bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-200 shadow-md text-xs text-slate-700 font-medium">
-        <span className="font-bold text-emerald-700">Verde:</span> &lt; 2.00 € |{' '}
-        <span className="font-bold text-amber-600">Giallo:</span> Eni |{' '}
-        <span className="font-bold text-sky-600">Blu:</span> IP |{' '}
-        <span className="font-bold text-rose-600">Rosso:</span> Q8
+      <div className="absolute bottom-3 left-3 right-3 sm:right-auto z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-200 shadow-md text-[11px] sm:text-xs text-slate-700 font-medium">
+        <span className="whitespace-nowrap"><span className="font-bold text-emerald-700">Verde:</span> &lt; 2.00 €</span>
+        <span className="whitespace-nowrap"><span className="font-bold text-amber-600">Giallo:</span> Eni</span>
+        <span className="whitespace-nowrap"><span className="font-bold text-sky-600">Blu:</span> IP</span>
+        <span className="whitespace-nowrap"><span className="font-bold text-rose-600">Rosso:</span> Q8</span>
       </div>
     </div>
   );

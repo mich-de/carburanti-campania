@@ -7,7 +7,7 @@ export const Legenda: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs mb-6 overflow-hidden transition-all">
+    <div className="bg-white rounded-xl border border-slate-200/90 shadow-sm mb-4 sm:mb-6 overflow-hidden transition-all">
       {/* Clickable Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -19,7 +19,7 @@ export const Legenda: React.FC = () => {
           </span>
           <div>
             <span className="text-xs sm:text-sm font-bold text-slate-800">
-              Legenda &amp; Guida ai Simboli
+              Legenda<span className="hidden sm:inline"> &amp; Guida ai Simboli</span>
             </span>
             <span className="hidden sm:inline text-xs text-slate-500 ml-2">
               (Significato di SELF/SERV, Price Cap, Colori Brand e Carburanti Speciali)
@@ -27,7 +27,7 @@ export const Legenda: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 whitespace-nowrap">
           <span>{isOpen ? 'Nascondi' : 'Mostra legenda'}</span>
           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>

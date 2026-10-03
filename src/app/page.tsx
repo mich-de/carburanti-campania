@@ -18,7 +18,7 @@ const StationMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[520px] rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-medium">
+      <div className="w-full h-[60svh] min-h-[320px] sm:h-[520px] rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-medium">
         <Loader2 className="w-6 h-6 animate-spin text-emerald-600 mr-2" />
         <span>Caricamento mappa OpenStreetMap...</span>
       </div>
@@ -202,25 +202,25 @@ export default function HomePage() {
       {/* 2. News Banner referring to Il Sole 24 Ore, inSella and MIMIT */}
       <NewsBanner />
 
-      {/* 2b. Dual Source Architecture Status Bar */}
+      {/* 2b. Dual Source Architecture Status Bar: dettagli da tablet in su; su smartphone resta la fonte attiva */}
       <div className="bg-slate-100/90 border-b border-slate-200/80 py-2 px-4 text-xs text-slate-600">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden md:flex flex-wrap items-center gap-2">
             <span className="font-bold text-slate-800 flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Sincronizzazione Dati:
             </span>
-            <span className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+            <span className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">
               <strong className="text-slate-800">1. Primaria:</strong> API Osservaprezzi (<code>carburanti.mise.gov.it/ospzApi</code>)
             </span>
-            <span className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+            <span className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">
               <strong className="text-slate-800">2. Secondaria:</strong> Open Data MIMIT CSV (<code>mimit.gov.it/images/exportCSV</code>)
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 self-end md:self-auto">
+          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-1.5 md:self-auto">
             <span className="text-slate-500">Fonte attiva:</span>
-            <span className="font-bold bg-emerald-100 text-emerald-900 px-2.5 py-0.5 rounded-full border border-emerald-300 shadow-2xs">
+            <span className="font-bold bg-emerald-100 text-emerald-900 px-2.5 py-0.5 rounded-lg md:rounded-full border border-emerald-300 shadow-sm break-words">
               {apiMeta?.source || 'Open Data MIMIT CSV (Fallback)'}
             </span>
           </div>
@@ -228,7 +228,7 @@ export default function HomePage() {
       </div>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1 w-full">
         {/* 3. KPI Statistics Banner */}
         <StatsBanner
           stats={stats}
@@ -269,7 +269,7 @@ export default function HomePage() {
 
         {/* Smart Search Notice (e.g. Meta has stations > 2€ or only Servito) */}
         {searchFeedback && searchFeedback.matchingWithoutPriceCapCount > 0 && (
-          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
             <div className="flex items-start gap-2.5">
               <span className="p-1.5 rounded-lg bg-amber-200 text-amber-900 shrink-0 mt-0.5">
                 <Info className="w-4 h-4" />
@@ -290,7 +290,7 @@ export default function HomePage() {
                 setOnlyUnder2(false);
                 setOnlySelf(false);
               }}
-              className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 transition active:scale-95 shadow-xs"
+              className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 transition active:scale-95 shadow-sm"
             >
               Mostra tutti i distributori di &ldquo;{searchQuery}&rdquo;
             </button>
@@ -323,7 +323,7 @@ export default function HomePage() {
 
         {/* No Results Fallback */}
         {!isLoading && processedStations.length === 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center max-w-lg mx-auto my-8">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-12 text-center max-w-lg mx-auto my-6 sm:my-8">
             <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
               <FilterX className="w-6 h-6" />
             </div>
@@ -377,7 +377,7 @@ export default function HomePage() {
           <>
             {viewMode === 'grid' && (
               <div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {processedStations.slice(0, visibleCount).map((station) => (
                     <StationCard
                       key={station.id}
@@ -391,7 +391,7 @@ export default function HomePage() {
                   <div className="text-center mt-8">
                     <button
                       onClick={() => setVisibleCount((prev) => prev + 36)}
-                      className="px-6 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 font-bold text-xs sm:text-sm text-slate-700 shadow-xs hover:shadow transition"
+                      className="w-full sm:w-auto min-h-11 px-6 py-2.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 font-bold text-xs sm:text-sm text-slate-700 shadow-sm hover:shadow transition"
                     >
                       Mostra altri 36 impianti (rimanenti {processedStations.length - visibleCount})
                     </button>

@@ -31,9 +31,9 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvinc
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 my-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 my-3 sm:my-4">
       {/* Metric 1: Impianti Sotto i 2 Euro */}
-      <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+      <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-sm flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             {getDisplayName()} &lt; 2.00 €
@@ -54,7 +54,7 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvinc
       </div>
 
       {/* Metric 2: Minimo Benzina */}
-      <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+      <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-sm flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Benzina Minima Self
@@ -80,7 +80,7 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvinc
       </div>
 
       {/* Metric 3: Minimo Gasolio/Diesel */}
-      <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+      <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-sm flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Gasolio Minimo Self
@@ -106,7 +106,7 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvinc
       </div>
 
       {/* Metric 4: GPL & Metano */}
-      <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+      <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200/80 shadow-sm flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             GPL &amp; Metano Record
