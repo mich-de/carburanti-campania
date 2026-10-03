@@ -58,6 +58,10 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
+  // Il tetto Accordo Price Cap riguarda solo la benzina: con gasolio, GPL o metano il filtro non si applica
+  const priceCapApplies = selectedFuel === 'all' || selectedFuel === 'Benzina';
+  const effectiveOnlyPriceCap = onlyPriceCap && priceCapApplies;
+
   // Search Feedback when price cap or self excludes searched town
   const [searchFeedback, setSearchFeedback] = useState<{
     matchingWithoutPriceCapCount: number;
@@ -85,7 +89,7 @@ export default function HomePage() {
         carburante: selectedFuel,
         brand: selectedBrand,
         onlyUnder2: onlyUnder2 ? 'true' : 'false',
-        onlyPriceCap: onlyPriceCap ? 'true' : 'false',
+        onlyPriceCap: effectiveOnlyPriceCap ? 'true' : 'false',
         onlySelf: onlySelf ? 'true' : 'false',
         search: searchQuery,
       });
@@ -114,7 +118,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProvince, selectedTerritory, selectedFuel, selectedBrand, onlyUnder2, onlyPriceCap, onlySelf, searchQuery]);
+  }, [selectedProvince, selectedTerritory, selectedFuel, selectedBrand, onlyUnder2, effectiveOnlyPriceCap, onlySelf, searchQuery]);
 
   // Load data when filters change (debounced for search)
   useEffect(() => {
@@ -200,7 +204,7 @@ export default function HomePage() {
       />
 
       {/* 2. News Banner referring to Il Sole 24 Ore, inSella and MIMIT */}
-      <NewsBanner />
+      <NewsBanner onLocateMe={handleLocateMe} isLocating={isLocating} locationActive={userLocation !== null} />
 
       {/* 2b. Dual Source Architecture Status Bar: dettagli da tablet in su; su smartphone resta la fonte attiva */}
       <div className="bg-slate-100/90 border-b border-slate-200/80 py-2 px-4 text-xs text-slate-600">
@@ -251,7 +255,8 @@ export default function HomePage() {
           onBrandChange={setSelectedBrand}
           onlyUnder2={onlyUnder2}
           onToggleUnder2={setOnlyUnder2}
-          onlyPriceCap={onlyPriceCap}
+          onlyPriceCap={effectiveOnlyPriceCap}
+          priceCapAvailable={priceCapApplies}
           onTogglePriceCap={setOnlyPriceCap}
           onlySelf={onlySelf}
           onToggleSelf={setOnlySelf}
@@ -409,6 +414,9 @@ export default function HomePage() {
                 stations={processedStations}
                 selectedProvince={selectedTerritory === 'penisola' ? 'PENISOLA_SORRENTINA' : selectedProvince}
                 userLocation={userLocation}
+                searchQuery={searchQuery}
+                isLocating={isLocating}
+                onLocateMe={handleLocateMe}
               />
             )}
           </>

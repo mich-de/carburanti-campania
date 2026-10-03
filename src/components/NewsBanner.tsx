@@ -3,7 +3,13 @@
 import React, { useState } from 'react';
 import { Newspaper, ChevronDown, ChevronUp, ExternalLink, ShieldCheck, CheckCircle2, TrendingDown, Compass } from 'lucide-react';
 
-export const NewsBanner: React.FC = () => {
+interface NewsBannerProps {
+  onLocateMe?: () => void;
+  isLocating?: boolean;
+  locationActive?: boolean;
+}
+
+export const NewsBanner: React.FC<NewsBannerProps> = ({ onLocateMe, isLocating = false, locationActive = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -49,6 +55,26 @@ export const NewsBanner: React.FC = () => {
             </a>
           </div>
         </div>
+
+        {/* Suggerimento GPS: dai la posizione e ti mostriamo le stazioni più vicine */}
+        {onLocateMe && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm text-slate-800">
+            <span className="font-semibold text-sky-900">
+              📍{' '}
+              {locationActive
+                ? 'Stazioni ordinate per distanza da te.'
+                : 'Dai la posizione e ti troviamo le stazioni più vicine a te.'}
+            </span>
+            <button
+              type="button"
+              onClick={onLocateMe}
+              disabled={isLocating}
+              className="inline-flex items-center min-h-9 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-sm transition active:scale-95 disabled:opacity-60"
+            >
+              {isLocating ? 'Rilevamento…' : locationActive ? 'Aggiorna posizione' : 'Attiva GPS'}
+            </button>
+          </div>
+        )}
 
         {/* Collapsible Article & Sources Content */}
         {isExpanded && (

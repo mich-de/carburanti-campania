@@ -83,6 +83,150 @@ body {
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Mappa: gruppi di impianti vicini (cluster) */
+.map-cluster-icon {
+  background: transparent;
+  border: none;
+}
+
+.map-cluster {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  border: 3px solid #ffffff;
+  background-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+  line-height: 1;
+}
+
+.map-cluster--under2 {
+  background-color: #059669;
+}
+
+.map-cluster span {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.map-cluster small {
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Mappa: pallino della posizione GPS */
+.user-pin {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: 3px solid #ffffff;
+  background: #0284c7;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.25), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Mappa: popup impianto con testi leggibili e pulsante di navigazione da 44px */
+.station-popup {
+  min-width: 200px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.station-popup__name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #0f172a;
+}
+
+.station-popup__addr {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.station-popup__dist {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.station-popup__box {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.station-popup__label {
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.station-popup__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 3px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.station-popup__row strong {
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.station-popup__row strong.is-cap {
+  color: #059669;
+}
+
+/* Il selettore composto batte lo stile dei link di Leaflet, che altrimenti colora il testo di blu */
+.station-popup a.station-popup__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 8px;
+  border-radius: 8px;
+  background: #059669;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.station-popup a.station-popup__cta:hover {
+  background: #047857;
+}
+
+/* Mappa: pulsanti zoom più grandi sui dispositivi touch */
+.leaflet-container.leaflet-touch .leaflet-bar a {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+}
+
+/* Su smartphone i marcatori non pulsano: con tanti impianti pesa su batteria e fluidità */
+@media (max-width: 639px) {
+  .price-cap-pulse {
+    animation: none;
+  }
+}
+
 /* Con "riduci movimento" attivo nel telefono, le animazioni decorative non partono */
 @media (prefers-reduced-motion: reduce) {
   .price-cap-pulse,

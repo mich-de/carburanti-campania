@@ -30,6 +30,8 @@ interface FiltersProps {
   onToggleUnder2: (val: boolean) => void;
   onlyPriceCap: boolean;
   onTogglePriceCap: (val: boolean) => void;
+  // false con carburanti diversi dalla benzina: il tetto Price Cap non si applica e il filtro si nasconde
+  priceCapAvailable?: boolean;
   onlySelf: boolean;
   onToggleSelf: (val: boolean) => void;
   searchQuery: string;
@@ -61,6 +63,15 @@ const FUEL_TYPES: { type: string; label: string }[] = [
   { type: 'Metano', label: 'Metano' },
 ];
 
+// Versione corta dei carburanti per i pulsanti su smartphone
+const FUEL_CHIPS: { type: string; label: string }[] = [
+  { type: 'all', label: 'Tutti' },
+  { type: 'Benzina', label: 'Benzina' },
+  { type: 'Gasolio', label: 'Gasolio' },
+  { type: 'GPL', label: 'GPL' },
+  { type: 'Metano', label: 'Metano' },
+];
+
 const BRANDS = [
   { code: 'all', label: 'Tutti i Marchi' },
   { code: 'Eni', label: 'Eni / Agip' },
@@ -83,6 +94,7 @@ export const Filters: React.FC<FiltersProps> = ({
   onToggleUnder2,
   onlyPriceCap,
   onTogglePriceCap,
+  priceCapAvailable = true,
   onlySelf,
   onToggleSelf,
   searchQuery,
@@ -96,13 +108,12 @@ export const Filters: React.FC<FiltersProps> = ({
   sortByDistance,
   onToggleSortByDistance,
 }) => {
-  // Su smartphone ambito, provincia, carburante e marchio restano chiusi finché non servono
+  // Su smartphone ambito, provincia e marchio restano chiusi finché non servono (il carburante è sempre visibile)
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
   const advancedActiveCount =
     (selectedTerritory !== 'all' ? 1 : 0) +
     (selectedProvince !== 'all' ? 1 : 0) +
-    (selectedFuel !== 'all' ? 1 : 0) +
     (selectedBrand !== 'all' ? 1 : 0);
 
   return (
@@ -280,7 +291,26 @@ export const Filters: React.FC<FiltersProps> = ({
         </div>
       </div>
 
-      {/* 3. Selectors & Toggles: su smartphone provincia, carburante e marchio seguono "Filtri avanzati" */}
+      {/* 3. Tipo carburante su smartphone: pulsanti sempre visibili (sul desktop c'è il menu a tendina) */}
+      <div className="sm:hidden flex flex-wrap gap-1.5" role="group" aria-label="Tipo carburante">
+        {FUEL_CHIPS.map((f) => (
+          <button
+            key={f.type}
+            type="button"
+            onClick={() => onFuelChange(f.type)}
+            aria-pressed={selectedFuel === f.type}
+            className={`min-h-10 px-3.5 rounded-full border text-xs font-bold transition active:scale-95 ${
+              selectedFuel === f.type
+                ? 'bg-slate-900 border-slate-900 text-white'
+                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 4. Selectors & Toggles: su smartphone provincia e marchio seguono "Filtri avanzati" */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Province Selector (disabled when Penisola Sorrentina is active) */}
         <div className={`${showAdvanced ? 'block' : 'hidden'} sm:block`}>
@@ -310,8 +340,8 @@ export const Filters: React.FC<FiltersProps> = ({
           </select>
         </div>
 
-        {/* Fuel Type Selector */}
-        <div className={`${showAdvanced ? 'block' : 'hidden'} sm:block`}>
+        {/* Fuel Type Selector: su smartphone ci sono i pulsanti sopra */}
+        <div className="hidden sm:block">
           <label className="block text-xs font-semibold text-slate-600 mb-1">
             Tipo Carburante
           </label>
@@ -348,29 +378,35 @@ export const Filters: React.FC<FiltersProps> = ({
 
         {/* 3 Dedicated Key Toggles: Accordo Price Cap (Default), Tutti < 2€, Self-Service (Default). Sempre visibili */}
         <div className="flex flex-col justify-center gap-1 sm:gap-1.5 bg-slate-50/80 p-2.5 rounded-lg border border-slate-200/70">
-          {/* Toggle 1: Aderenti Price Cap (Eni, IP, Q8, Esso) - DEFAULT ATTIVO */}
-          <label className="relative flex items-center justify-between gap-2 min-h-10 sm:min-h-0 py-1 sm:py-0 cursor-pointer select-none">
-            <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-amber-600 shrink-0" />
-              <span>Accordo Price Cap</span>
-              <span className="text-[10px] text-amber-800 bg-amber-100 px-1 rounded font-semibold">Grandi Reti &lt;2€</span>
-            </span>
-            <div className="relative shrink-0">
-              <input
-                type="checkbox"
-                checked={onlyPriceCap}
-                onChange={(e) => {
-                  const val = e.target.checked;
-                  onTogglePriceCap(val);
-                  if (val && onlyUnder2) {
-                    onToggleUnder2(false);
-                  }
-                }}
-                className="sr-only peer"
-              />
-              <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-600"></div>
-            </div>
-          </label>
+          {/* Toggle 1: Aderenti Price Cap (Eni, IP, Q8, Esso) - DEFAULT ATTIVO. Esiste solo per la benzina */}
+          {priceCapAvailable ? (
+            <label className="relative flex items-center justify-between gap-2 min-h-10 sm:min-h-0 py-1 sm:py-0 cursor-pointer select-none">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-amber-600 shrink-0" />
+                <span>Accordo Price Cap</span>
+                <span className="text-[10px] text-amber-800 bg-amber-100 px-1 rounded font-semibold">Grandi Reti &lt;2€</span>
+              </span>
+              <div className="relative shrink-0">
+                <input
+                  type="checkbox"
+                  checked={onlyPriceCap}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    onTogglePriceCap(val);
+                    if (val && onlyUnder2) {
+                      onToggleUnder2(false);
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-600"></div>
+              </div>
+            </label>
+          ) : (
+            <p className="text-[11px] text-slate-500 leading-snug">
+              Il tetto Price Cap riguarda solo la benzina: per questo carburante il filtro è disattivato.
+            </p>
+          )}
 
           {/* Toggle 2: Prezzo < 2.00 € Tutti i gestori (inclusi No Logo / Pompe Bianche) */}
           <label className="relative flex items-center justify-between gap-2 min-h-10 sm:min-h-0 py-1 sm:py-0 cursor-pointer select-none">
@@ -415,7 +451,7 @@ export const Filters: React.FC<FiltersProps> = ({
         </div>
       </div>
 
-      {/* 4. Active Filters & Results Counter */}
+      {/* 5. Active Filters & Results Counter */}
       <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
         <div className="flex items-center gap-2 flex-wrap">
           <span>
