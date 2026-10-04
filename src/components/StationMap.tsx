@@ -1,20 +1,23 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
-import { LocateFixed, Maximize2 } from 'lucide-react';
+import 'leaflet-rotate';
+import { Crosshair, Focus, LocateFixed, Maximize2, Minimize2, Navigation, RotateCw } from 'lucide-react';
 import { GasStation } from '../types/fuel';
+import { CAMPANIA_BOUNDS, UserLocation, formatDistanceMeters } from '../lib/geo';
 
 interface StationMapProps {
   stations: GasStation[];
   selectedProvince: string;
-  userLocation?: { lat: number; lng: number } | null;
+  userLocation?: UserLocation | null;
   searchQuery?: string;
   isLocating?: boolean;
   onLocateMe?: () => void;
+  onPickLocation?: (lat: number, lng: number) => void;
 }
 
 const PROVINCE_CENTERS: Record<string, [number, number, number]> = {
@@ -27,11 +30,23 @@ const PROVINCE_CENTERS: Record<string, [number, number, number]> = {
   BN: [41.13, 14.78, 11],
 };
 
+// Con lo zoom indietro e lo spostamento la mappa resta sulla Campania
+const CAMPANIA = L.latLngBounds(CAMPANIA_BOUNDS);
+// Un cerchio di precisione più grande della mappa non serve: oltre questo valore non viene disegnato
+const MAX_ACCURACY_CIRCLE_M = 5000;
+
 // Prezzo minimo di ogni marcatore e presenza di un prezzo sotto 2 €: servono ai cluster per riassumere il gruppo
 const markerStats = new WeakMap<L.Marker, { minPrice: number; underTwo: boolean }>();
 
 // Le icone a pillola si riusano: con centinaia di impianti non se ne crea una per ogni marcatore
 const pillIcons = new Map<string, L.DivIcon>();
+
+const userPinIcon = L.divIcon({
+  className: 'user-pin-icon',
+  html: '<span class="user-pin"></span>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
 
 const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
@@ -94,7 +109,7 @@ const popupHtml = (st: GasStation): string => {
     .join('');
   const distance =
     typeof st.distanceKm === 'number'
-      ? `<div class="station-popup__dist">📍 a ${st.distanceKm < 1 ? `${Math.round(st.distanceKm * 1000)} m` : `${st.distanceKm.toFixed(1)} km`} da te</div>`
+      ? `<div class="station-popup__dist">📍 a ${formatDistanceMeters(st.distanceKm * 1000)} da te</div>`
       : '';
   return `
     <div class="station-popup">
@@ -109,6 +124,12 @@ const popupHtml = (st: GasStation): string => {
     </div>`;
 };
 
+const btnBase =
+  'flex h-11 w-11 items-center justify-center rounded-xl shadow-md border transition active:scale-95 disabled:opacity-60';
+const btnNormal = `${btnBase} bg-white border-slate-200 text-slate-700`;
+const btnSky = `${btnBase} bg-white border-slate-200 text-sky-700`;
+const btnPicking = `${btnBase} bg-amber-100 border-amber-400 text-amber-900`;
+
 export const StationMap: React.FC<StationMapProps> = ({
   stations,
   selectedProvince,
@@ -116,14 +137,34 @@ export const StationMap: React.FC<StationMapProps> = ({
   searchQuery,
   isLocating,
   onLocateMe,
+  onPickLocation,
 }) => {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const accuracyRef = useRef<L.Circle | null>(null);
+  const pickingRef = useRef(false);
+  const onPickRef = useRef(onPickLocation);
+
+  const [picking, setPicking] = useState(false);
+  const [bearing, setBearing] = useState(0);
+  // Schermo intero: quello nativo del browser quando c'è, altrimenti la mappa occupa tutta la pagina via CSS
+  const [nativeFull, setNativeFull] = useState(false);
+  const [cssFull, setCssFull] = useState(false);
+  const isFull = nativeFull || cssFull;
 
   // Su schermi stretti lo zoom iniziale è uno in meno, così si vede tutta la zona
   const zoomFor = (zoom: number): number => (window.innerWidth < 640 ? zoom - 1 : zoom);
+
+  useEffect(() => {
+    onPickRef.current = onPickLocation;
+  }, [onPickLocation]);
+
+  useEffect(() => {
+    pickingRef.current = picking;
+  }, [picking]);
 
   // 1. Crea la mappa una sola volta e la distrugge quando il componente esce dalla pagina
   useEffect(() => {
@@ -133,8 +174,17 @@ export const StationMap: React.FC<StationMapProps> = ({
     const map = L.map(containerRef.current, {
       center: [lat, lng],
       zoom: zoomFor(zoom),
+      maxBounds: CAMPANIA,
+      maxBoundsViscosity: 1,
       zoomControl: true,
       attributionControl: true,
+      // Rotazione: due dita sul telefono, Shift + rotella sul computer, pulsanti sulla mappa
+      rotate: true,
+      bearing: 0,
+      // Il plugin aggiungerebbe un suo controllo di rotazione: qui ci sono già i nostri pulsanti
+      rotateControl: false,
+      touchRotate: true,
+      shiftKeyRotate: true,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -150,6 +200,26 @@ export const StationMap: React.FC<StationMapProps> = ({
     });
     cluster.addTo(map);
 
+    // In modalità "imposta a mano" il tocco sulla mappa diventa la posizione dell'utente
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      if (!pickingRef.current) return;
+      pickingRef.current = false;
+      setPicking(false);
+      onPickRef.current?.(e.latlng.lat, e.latlng.lng);
+    });
+
+    map.on('rotate', () => setBearing(map.getBearing()));
+
+    // Lo zoom indietro si ferma quando tutta la Campania sta nello schermo: più indietro si vedrebbero solo le regioni vicine
+    const updateMinZoom = () => {
+      const fit = Math.ceil(map.getBoundsZoom(CAMPANIA, false));
+      if (!Number.isFinite(fit)) return;
+      map.setMinZoom(fit);
+      if (map.getZoom() < fit) map.setZoom(fit);
+    };
+    map.whenReady(updateMinZoom);
+    map.on('resize', updateMinZoom);
+
     mapRef.current = map;
     clusterRef.current = cluster;
 
@@ -158,6 +228,7 @@ export const StationMap: React.FC<StationMapProps> = ({
       mapRef.current = null;
       clusterRef.current = null;
       userMarkerRef.current = null;
+      accuracyRef.current = null;
     };
   }, []);
 
@@ -207,27 +278,84 @@ export const StationMap: React.FC<StationMapProps> = ({
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
   }, [searchQuery, stations]);
 
-  // 5. Posizione GPS: punto blu sulla mappa e vista centrata sull'utente
+  // 5. Posizione: punto blu, cerchio di precisione e vista centrata sull'utente (solo se è in Campania)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
     userMarkerRef.current?.remove();
+    accuracyRef.current?.remove();
     userMarkerRef.current = null;
+    accuracyRef.current = null;
     if (!userLocation) return;
 
-    userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
-      icon: L.divIcon({
-        className: 'user-pin-icon',
-        html: '<span class="user-pin"></span>',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
-      }),
+    const { lat, lng, accuracy } = userLocation;
+    if (accuracy && accuracy <= MAX_ACCURACY_CIRCLE_M) {
+      accuracyRef.current = L.circle([lat, lng], {
+        radius: accuracy,
+        color: '#0284c7',
+        weight: 1,
+        fillColor: '#0284c7',
+        fillOpacity: 0.12,
+        interactive: false,
+      }).addTo(map);
+    }
+    userMarkerRef.current = L.marker([lat, lng], {
+      icon: userPinIcon,
       interactive: false,
       keyboard: false,
     }).addTo(map);
-    map.flyTo([userLocation.lat, userLocation.lng], Math.max(map.getZoom(), 14), { duration: 0.8 });
+
+    if (CAMPANIA.contains([lat, lng])) {
+      map.flyTo([lat, lng], Math.max(map.getZoom(), 14), { duration: 0.8 });
+    }
   }, [userLocation]);
+
+  // 6. Schermo intero: il browser avvisa quando lo si chiude (per esempio con Esc)
+  useEffect(() => {
+    const onChange = () => setNativeFull(document.fullscreenElement === wrapperRef.current);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!cssFull) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCssFull(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [cssFull]);
+
+  // Quando cambia la dimensione la mappa ricalcola lo spazio disponibile
+  useEffect(() => {
+    const timer = window.setTimeout(() => mapRef.current?.invalidateSize(), 150);
+    return () => window.clearTimeout(timer);
+  }, [isFull]);
+
+  const toggleFullscreen = () => {
+    if (nativeFull && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => setNativeFull(false));
+      return;
+    }
+    if (cssFull) {
+      setCssFull(false);
+      return;
+    }
+    const el = wrapperRef.current;
+    if (el && typeof el.requestFullscreen === 'function') {
+      el.requestFullscreen().catch(() => setCssFull(true));
+      return;
+    }
+    setCssFull(true);
+  };
+
+  const rotateBy = (degrees: number) => {
+    const map = mapRef.current;
+    if (map) map.setBearing(map.getBearing() + degrees);
+  };
+
+  const resetBearing = () => mapRef.current?.setBearing(0);
 
   const fitResults = () => {
     const map = mapRef.current;
@@ -237,11 +365,63 @@ export const StationMap: React.FC<StationMapProps> = ({
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 });
   };
 
+  const rotated = bearing > 0.5 && bearing < 359.5;
+
   return (
-    <div className="relative w-full h-[60svh] min-h-[320px] sm:h-[520px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
+    <div
+      ref={wrapperRef}
+      className={`${
+        isFull
+          ? 'fixed inset-0 z-[3000] h-[100svh] w-full bg-slate-100'
+          : 'relative w-full h-[72svh] min-h-[420px] md:h-[460px] lg:h-[540px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-100'
+      } ${picking ? 'cursor-crosshair' : ''}`}
+    >
+      {/* La classe del contenitore è di Leaflet: non va cambiata da React, per il cursore si usa il wrapper */}
       <div ref={containerRef} className="w-full h-full" />
 
-      {/* Pulsanti sulla mappa: posizione GPS e inquadratura di tutti i risultati */}
+      {/* In alto a destra: tutti i risultati, schermo intero, rotazione e ritorno al nord */}
+      <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={fitResults}
+          aria-label="Inquadra tutti i distributori"
+          title="Tutti i risultati"
+          className={btnNormal}
+        >
+          <Focus className="w-5 h-5" />
+        </button>
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          aria-label={isFull ? 'Esci dal pieno schermo' : 'Pieno schermo'}
+          title={isFull ? 'Esci dal pieno schermo' : 'Pieno schermo'}
+          className={btnNormal}
+        >
+          {isFull ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => rotateBy(45)}
+          aria-label="Ruota la mappa di 45 gradi"
+          title="Ruota"
+          className={btnNormal}
+        >
+          <RotateCw className="w-5 h-5" />
+        </button>
+        {rotated && (
+          <button
+            type="button"
+            onClick={resetBearing}
+            aria-label="Riporta il nord in alto"
+            title="Nord in alto"
+            className={btnNormal}
+          >
+            <Navigation className="w-5 h-5" style={{ transform: `rotate(${bearing}deg)` }} />
+          </button>
+        )}
+      </div>
+
+      {/* In basso a destra: posizione GPS e posizione scelta a mano */}
       <div className="absolute bottom-10 right-3 z-[1000] flex flex-col gap-2">
         {onLocateMe && (
           <button
@@ -250,21 +430,28 @@ export const StationMap: React.FC<StationMapProps> = ({
             disabled={isLocating}
             aria-label="Centra la mappa sulla mia posizione"
             title="Dove sono"
-            className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-sky-700 shadow-md border border-slate-200 transition active:scale-95 disabled:opacity-60"
+            className={btnSky}
           >
             <LocateFixed className={`w-5 h-5 ${isLocating ? 'animate-spin' : ''}`} />
           </button>
         )}
         <button
           type="button"
-          onClick={fitResults}
-          aria-label="Inquadra tutti i distributori"
-          title="Tutti i risultati"
-          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-700 shadow-md border border-slate-200 transition active:scale-95"
+          onClick={() => setPicking((p) => !p)}
+          aria-pressed={picking}
+          aria-label="Imposta la mia posizione toccando la mappa"
+          title="Imposta a mano"
+          className={picking ? btnPicking : btnNormal}
         >
-          <Maximize2 className="w-5 h-5" />
+          <Crosshair className="w-5 h-5" />
         </button>
       </div>
+
+      {picking && (
+        <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-[1000] whitespace-nowrap rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-900 shadow-md">
+          Tocca la mappa dove ti trovi
+        </div>
+      )}
 
       {/* Legenda: su smartphone va a capo e lascia libera la colonna dei pulsanti */}
       <div className="absolute bottom-3 left-3 right-16 sm:right-auto z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-200 shadow-md text-[11px] sm:text-xs text-slate-700 font-medium">

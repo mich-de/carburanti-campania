@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { GasStation, FuelStats, FuelApiResponse } from '@/types/fuel';
+import { UserLocation, isInCampania } from '@/lib/geo';
 import { Header } from '@/components/Header';
 import { NewsBanner } from '@/components/NewsBanner';
 import { StatsBanner } from '@/components/StatsBanner';
@@ -18,7 +19,7 @@ const StationMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[60svh] min-h-[320px] sm:h-[520px] rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-medium">
+      <div className="w-full h-[72svh] min-h-[420px] md:h-[460px] lg:h-[540px] rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-medium">
         <Loader2 className="w-6 h-6 animate-spin text-emerald-600 mr-2" />
         <span>Caricamento mappa OpenStreetMap...</span>
       </div>
@@ -75,7 +76,7 @@ export default function HomePage() {
   const [apiMeta, setApiMeta] = useState<FuelApiResponse['meta'] | null>(null);
 
   // GPS Geolocation States (Recommended by inSella article)
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [sortByDistance, setSortByDistance] = useState<boolean>(false);
 
@@ -147,9 +148,10 @@ export default function HomePage() {
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const coords = {
+        const coords: UserLocation = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
         };
         setUserLocation(coords);
         setSortByDistance(true);
@@ -160,9 +162,32 @@ export default function HomePage() {
         setIsLocating(false);
         alert('Impossibile rilevare la posizione GPS. Verifica i permessi del browser.');
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      // maximumAge: 0 evita di riusare una posizione vecchia, magari di un altro luogo
+      { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
     );
   };
+
+  // Posizione scelta a mano toccando la mappa: serve quando il GPS del dispositivo sbaglia
+  const handlePickLocation = (lat: number, lng: number) => {
+    setUserLocation({ lat, lng, manual: true });
+    setSortByDistance(true);
+  };
+
+  // Rimuove la posizione: senza posizione non ci sono distanze né ordinamento per vicinanza
+  const handleClearLocation = () => {
+    setUserLocation(null);
+    setSortByDistance(false);
+  };
+
+  // Posizione sospetta: fuori dalla Campania oppure con precisione bassa (quella scelta a mano non si controlla)
+  const locationIssue: 'outside' | 'imprecise' | null =
+    !userLocation || userLocation.manual
+      ? null
+      : !isInCampania(userLocation.lat, userLocation.lng)
+      ? 'outside'
+      : userLocation.accuracy && userLocation.accuracy > 2000
+      ? 'imprecise'
+      : null;
 
   // Enhance stations with distance and sort accordingly
   const processedStations = useMemo(() => {
@@ -273,6 +298,8 @@ export default function HomePage() {
           userLocation={userLocation}
           onLocateMe={handleLocateMe}
           isLocating={isLocating}
+          locationIssue={locationIssue}
+          onClearLocation={handleClearLocation}
           sortByDistance={sortByDistance}
           onToggleSortByDistance={setSortByDistance}
         />
@@ -422,6 +449,7 @@ export default function HomePage() {
                 searchQuery={searchQuery}
                 isLocating={isLocating}
                 onLocateMe={handleLocateMe}
+                onPickLocation={handlePickLocation}
               />
             )}
           </>

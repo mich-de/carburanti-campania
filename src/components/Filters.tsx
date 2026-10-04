@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
   ChevronDown,
 } from 'lucide-react';
+import { UserLocation, formatDistanceMeters } from '../lib/geo';
 
 export type ViewMode = 'grid' | 'table' | 'map';
 export type TerritoryMode = 'all' | 'penisola';
@@ -41,7 +42,10 @@ interface FiltersProps {
   viewMode: ViewMode;
   onViewModeChange: (m: ViewMode) => void;
   totalResults: number;
-  userLocation: { lat: number; lng: number } | null;
+  userLocation: UserLocation | null;
+  // Problema della posizione GPS: fuori dalla Campania oppure con precisione bassa
+  locationIssue?: 'outside' | 'imprecise' | null;
+  onClearLocation?: () => void;
   onLocateMe: () => void;
   isLocating: boolean;
   sortByDistance: boolean;
@@ -112,6 +116,8 @@ export const Filters: React.FC<FiltersProps> = ({
   isLocating,
   sortByDistance,
   onToggleSortByDistance,
+  locationIssue = null,
+  onClearLocation,
   className = '',
 }) => {
   // Su smartphone ambito, provincia e marchio restano chiusi finché non servono (il carburante è sempre visibile)
@@ -486,8 +492,34 @@ export const Filters: React.FC<FiltersProps> = ({
           </span>
 
           {userLocation && (
-            <span className="text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-              📍 Ordinamento per vicinanza GPS attivo
+            <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+              📍 {userLocation.manual ? 'Posizione impostata sulla mappa' : 'Ordinamento per vicinanza GPS attivo'}
+              {!userLocation.manual && userLocation.accuracy ? (
+                <span className="font-medium text-sky-900">(precisione ±{formatDistanceMeters(userLocation.accuracy)})</span>
+              ) : null}
+              {onClearLocation && (
+                <button
+                  type="button"
+                  onClick={onClearLocation}
+                  aria-label="Rimuovi la posizione"
+                  className="rounded px-1.5 text-sky-900 hover:bg-sky-100"
+                >
+                  ✕ Rimuovi
+                </button>
+              )}
+            </span>
+          )}
+          {locationIssue && (
+            <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-amber-900 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
+              ⚠️{' '}
+              {locationIssue === 'outside'
+                ? 'La posizione è fuori dalla Campania: potrebbe essere sbagliata.'
+                : 'Precisione bassa: le distanze potrebbero essere imprecise.'}
+              {onLocateMe && (
+                <button type="button" onClick={onLocateMe} className="underline underline-offset-2">
+                  Riprova GPS
+                </button>
+              )}
             </span>
           )}
         </div>
@@ -513,6 +545,7 @@ export const Filters: React.FC<FiltersProps> = ({
                 onTogglePriceCap(true);
                 onToggleSelf(true);
                 onToggleUnder2(false);
+                onClearLocation?.();
                 onToggleSortByDistance(false);
               }}
               className="inline-flex items-center min-h-9 py-1 text-xs text-emerald-700 hover:text-emerald-900 font-medium underline underline-offset-2"
