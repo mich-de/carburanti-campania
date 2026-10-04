@@ -7,15 +7,21 @@ import { Flame, ShieldCheck, Zap, Gauge, MapPin } from 'lucide-react';
 interface StatsBannerProps {
   stats: FuelStats | null;
   selectedProvince: string;
-  selectedTerritory?: 'all' | 'penisola';
+  selectedTerritory?: 'all' | 'penisola' | 'amalfitana';
 }
 
 export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvince, selectedTerritory }) => {
   if (!stats) return null;
 
-  const isPen = selectedTerritory === 'penisola';
-  const currentProvStats = isPen
-    ? stats.byProvince['PENISOLA_SORRENTINA']
+  // Le aree costiere hanno statistiche proprie, calcolate dal server insieme a quelle delle province
+  const territoryKey =
+    selectedTerritory === 'penisola'
+      ? 'PENISOLA_SORRENTINA'
+      : selectedTerritory === 'amalfitana'
+      ? 'COSTIERA_AMALFITANA'
+      : null;
+  const currentProvStats = territoryKey
+    ? stats.byProvince[territoryKey] ?? null
     : selectedProvince !== 'all' && stats.byProvince[selectedProvince]
     ? stats.byProvince[selectedProvince]
     : null;
@@ -25,7 +31,8 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ stats, selectedProvinc
   const under2Percent = total > 0 ? Math.round((under2 / total) * 100) : 0;
 
   const getDisplayName = () => {
-    if (isPen) return 'Penisola Sorrentina';
+    if (selectedTerritory === 'penisola') return 'Penisola Sorrentina';
+    if (selectedTerritory === 'amalfitana') return 'Costiera Amalfitana';
     if (selectedProvince === 'all') return 'Campania';
     return `Provincia ${selectedProvince}`;
   };

@@ -27,6 +27,8 @@ export interface GasStation {
   bestPriceUnder2?: FuelPrice;
   isPriceCapBrand?: boolean;
   distanceKm?: number;
+  // true se le coordinate MIMIT erano lontane dalla provincia dichiarata e sono state scartate
+  coordsRejected?: boolean;
 }
 
 export interface FuelStats {

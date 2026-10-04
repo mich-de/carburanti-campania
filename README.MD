@@ -14,7 +14,9 @@ Applicazione web moderna sviluppata in **Next.js** per monitorare in tempo reale
 - 💰 **Monitor Price Cap (< 2.00 €):** Evidenzia con precisione i distributori che applicano lo sconto e il tetto a Benzina e Gasolio, escludendo GPL e Metano per non falsare le statistiche.
 - ⚡ **Dati Ufficiali MIMIT in Tempo Reale:** Ingestion diretta dei flussi aperti del Ministero delle Imprese e del Made in Italy (Osservaprezzi Carburanti).
 - ⏱️ **Cache Intelligente (TTL 15 min):** Prestazioni istantanee conformi alle specifiche di rate limiting e risparmio banda.
-- 🗺️ **Mappa Interattiva OpenStreetMap:** Visualizza tutti gli impianti geolocalizzati sulla mappa con Leaflet e pin personalizzati per brand e prezzo.
+- 🗺️ **Mappa Interattiva OpenStreetMap:** Visualizza tutti gli impianti geolocalizzati sulla mappa con Leaflet e pin personalizzati per brand e prezzo, con il confine della Campania e le 5 province colorate e con il nome.
+- 🌊 **Penisola Sorrentina e 🍋 Costiera Amalfitana:** Filtri rapidi per i 6 comuni della Penisola Sorrentina e i 13 della Costiera Amalfitana (Positano, Praiano, Furore, Conca dei Marini, Amalfi, Atrani, Ravello, Scala, Minori, Maiori, Tramonti, Cetara, Vietri sul Mare).
+- 🧭 **Coordinate verificate:** Se le coordinate MIMIT di un impianto distano più di 5 km dalla sua provincia, vengono scartate: l'impianto resta in elenco ma non compare in mappa, non ha distanza e la navigazione usa l'indirizzo.
 - 📍 **Geolocalizzazione GPS "Vicino a Me":** Rileva la posizione del dispositivo (come raccomandato dalla guida di *inSella*), calcola la distanza in km in locale (formula Haversine) e ordina all'istante i distributori più vicini.
 - 🔍 **Filtri Avanzati & Ricerca:** Filtra per provincia, marchio (Eni, IP, Q8, Pompe Bianche), tipo carburante e modalità Self/Servito.
 - 📱 **Mobile First & Navigazione GPS Integrata:** Ciascuna scheda impianto include il pulsante diretto per aprire l'itinerario in Google Maps o Apple Mappe.
@@ -80,6 +82,7 @@ L'applicazione integra un'architettura a **doppia fonte ufficiale** con fallback
    - In caso di temporaneo blackout di rete di entrambe le fonti, il sistema mantiene in memoria l'ultimo dato reale valido verificato senza azzerare i listini.
 4. **Cartografia:**
    - © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+   - Confini di regione e province: © [ISTAT](https://www.istat.it/), limiti amministrativi al 1° gennaio 2026, tramite [geojson-italy](https://github.com/openpolis/geojson-italy), licenza [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Semplificati a 100 m e inclusi nel repository (`src/data/campania-confini.json`): nessuna chiamata di rete aggiuntiva.
 5. **Articoli e Fonti Giornalistiche di Riferimento:**
    - [Il Sole 24 Ore - Price Cap Eni, IP e Q8](https://www.ilsole24ore.com/art/caro-carburante-eni-anche-ip-fa-scattare-sconti-ecco-quanto-si-puo-risparmiare-AJBhWzQB)
    - [inSella.it - È il giorno della benzina sotto i 2 euro: dove sono i distributori a prezzo scontato](https://www.insella.it/news/il-giorno-della-benzina-sotto-2-euro-dove-sono-distributori-prezzo-scontato-78577)

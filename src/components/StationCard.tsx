@@ -139,6 +139,12 @@ export const StationCard: React.FC<StationCardProps> = ({ station, selectedFuel 
             </span>
           )}
         </div>
+
+        {station.coordsRejected && (
+          <p className="mt-1.5 text-[11px] leading-snug text-amber-800">
+            Posizione nei dati MIMIT non attendibile: l&apos;impianto non è sulla mappa e &ldquo;Naviga&rdquo; usa l&apos;indirizzo.
+          </p>
+        )}
       </div>
 
       {/* Fuel Price Grid */}

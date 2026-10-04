@@ -7,6 +7,7 @@ import {
   Table as TableIcon,
   Map as MapIcon,
   Locate,
+  LocateOff,
   Compass,
   ShieldCheck,
   Tag,
@@ -16,11 +17,13 @@ import {
 import { UserLocation, formatDistanceMeters } from '../lib/geo';
 
 export type ViewMode = 'grid' | 'table' | 'map';
-export type TerritoryMode = 'all' | 'penisola';
+export type TerritoryMode = 'all' | 'penisola' | 'amalfitana';
 
 interface FiltersProps {
   selectedTerritory: TerritoryMode;
   onTerritoryChange: (t: TerritoryMode) => void;
+  // Numero di impianti per area costiera, dalle statistiche del server
+  territoryCounts?: { penisola?: number; amalfitana?: number };
   selectedProvince: string;
   onProvinceChange: (p: string) => void;
   selectedFuel: string;
@@ -92,6 +95,7 @@ const BRANDS = [
 export const Filters: React.FC<FiltersProps> = ({
   selectedTerritory,
   onTerritoryChange,
+  territoryCounts,
   selectedProvince,
   onProvinceChange,
   selectedFuel,
@@ -198,6 +202,10 @@ export const Filters: React.FC<FiltersProps> = ({
               <p className="text-[11px] text-sky-900 font-medium mt-0.5">
                 🌊 <strong>Penisola Sorrentina attiva:</strong> Massa Lubrense · Sorrento · Sant&apos;Agnello · Piano di Sorrento · Meta · Vico Equense
               </p>
+            ) : selectedTerritory === 'amalfitana' ? (
+              <p className="text-[11px] text-amber-900 font-medium mt-0.5">
+                🍋 <strong>Costiera Amalfitana attiva:</strong> Positano · Praiano · Furore · Conca dei Marini · Amalfi · Atrani · Ravello · Scala · Minori · Maiori · Tramonti · Cetara · Vietri sul Mare
+              </p>
             ) : (
               <p className="text-[11px] text-slate-500 font-medium mt-0.5">
                 🏛️ Monitoraggio regionale attivo su tutte le 5 province campane
@@ -206,13 +214,13 @@ export const Filters: React.FC<FiltersProps> = ({
           </div>
         </div>
 
-        {/* Territory Switcher Segmented Control: a tutta larghezza su smartphone */}
+        {/* Territory Switcher Segmented Control: su smartphone "Tutta la Campania" sopra e le due costiere affiancate */}
         <div className="grid grid-cols-2 sm:inline-flex w-full sm:w-auto p-1 bg-white rounded-xl border border-slate-200/90 shadow-sm self-stretch sm:self-auto shrink-0 gap-1">
           <button
             type="button"
             onClick={() => onTerritoryChange('all')}
             aria-pressed={selectedTerritory === 'all'}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 min-h-11 sm:min-h-0 px-2 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all select-none ${
+            className={`col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 min-h-11 sm:min-h-0 px-2 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all select-none ${
               selectedTerritory === 'all'
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -235,21 +243,49 @@ export const Filters: React.FC<FiltersProps> = ({
               onProvinceChange('all');
             }}
             aria-pressed={selectedTerritory === 'penisola'}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 min-h-11 sm:min-h-0 px-2 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all select-none ${
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 min-h-11 sm:min-h-0 px-2 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold text-center sm:whitespace-nowrap transition-all select-none ${
               selectedTerritory === 'penisola'
                 ? 'bg-gradient-to-r from-sky-600 to-teal-600 text-white shadow-md ring-2 ring-sky-300'
                 : 'text-slate-600 hover:text-sky-700 hover:bg-sky-50'
             }`}
-            title="Visualizza i 22 distributori dei 6 comuni della Penisola Sorrentina"
+            title="Visualizza i distributori dei 6 comuni della Penisola Sorrentina"
           >
             <span>🌊 Penisola Sorrentina</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                selectedTerritory === 'penisola' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'
-              }`}
-            >
-              22 Pompe
-            </span>
+            {typeof territoryCounts?.penisola === 'number' && (
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                  selectedTerritory === 'penisola' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'
+                }`}
+              >
+                {territoryCounts.penisola} Pompe
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onTerritoryChange('amalfitana');
+              onProvinceChange('all');
+            }}
+            aria-pressed={selectedTerritory === 'amalfitana'}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 min-h-11 sm:min-h-0 px-2 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold text-center sm:whitespace-nowrap transition-all select-none ${
+              selectedTerritory === 'amalfitana'
+                ? 'bg-gradient-to-r from-amber-700 to-orange-600 text-white shadow-md ring-2 ring-amber-300'
+                : 'text-slate-600 hover:text-amber-800 hover:bg-amber-50'
+            }`}
+            title="Visualizza i distributori dei 13 comuni della Costiera Amalfitana"
+          >
+            <span>🍋 Costiera Amalfitana</span>
+            {typeof territoryCounts?.amalfitana === 'number' && (
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                  selectedTerritory === 'amalfitana' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-900'
+                }`}
+              >
+                {territoryCounts.amalfitana} Pompe
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -267,20 +303,36 @@ export const Filters: React.FC<FiltersProps> = ({
           />
         </div>
 
-        {/* GPS Geolocation Button */}
+        {/* GPS: con la posizione attiva lo stesso pulsante la disattiva */}
         <button
           type="button"
-          onClick={onLocateMe}
+          onClick={userLocation && onClearLocation ? onClearLocation : onLocateMe}
           disabled={isLocating}
           className={`inline-flex items-center justify-center gap-1.5 w-full sm:w-auto min-h-11 sm:min-h-0 px-3 py-2.5 sm:py-2 rounded-lg text-xs font-bold transition active:scale-95 shrink-0 ${
-            userLocation && sortByDistance
-              ? 'bg-sky-600 text-white shadow-sm'
+            userLocation
+              ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sm'
               : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
           }`}
-          title="Attiva GPS per trovare i distributori più vicini alla tua posizione attuale (guida inSella)"
+          title={
+            userLocation
+              ? "Disattiva la posizione: le distanze spariscono e l'elenco torna in ordine di prezzo"
+              : 'Attiva GPS per trovare i distributori più vicini alla tua posizione attuale (guida inSella)'
+          }
         >
-          <Locate className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-sky-400' : ''}`} />
-          <span>{isLocating ? 'Rilevamento...' : userLocation ? '📍 GPS Attivo (Vicini)' : '📍 Più vicini (GPS)'}</span>
+          {userLocation ? (
+            <LocateOff className="w-3.5 h-3.5" />
+          ) : (
+            <Locate className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-sky-400' : ''}`} />
+          )}
+          <span>
+            {isLocating
+              ? 'Rilevamento...'
+              : userLocation
+              ? userLocation.manual
+                ? 'Rimuovi posizione'
+                : 'Disattiva GPS'
+              : '📍 Più vicini (GPS)'}
+          </span>
         </button>
 
         {/* View Mode Toggle */}
@@ -329,22 +381,22 @@ export const Filters: React.FC<FiltersProps> = ({
 
       {/* 4. Selectors & Toggles: su smartphone provincia e marchio seguono "Filtri avanzati" */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Province Selector (disabled when Penisola Sorrentina is active) */}
+        {/* Province Selector (disabled when a coastal area is active) */}
         <div className={`${showAdvanced ? 'block' : 'hidden'} sm:block`}>
           <label className="block text-xs font-semibold text-slate-600 mb-1">
             Provincia<span className="hidden sm:inline"> della Campania</span>
           </label>
           <select
             value={selectedProvince}
-            disabled={selectedTerritory === 'penisola'}
+            disabled={selectedTerritory !== 'all'}
             onChange={(e) => {
               onProvinceChange(e.target.value);
-              if (selectedTerritory === 'penisola') {
+              if (selectedTerritory !== 'all') {
                 onTerritoryChange('all');
               }
             }}
             className={`w-full min-h-11 sm:min-h-0 text-sm border border-slate-200 rounded-lg px-3 py-2.5 sm:py-2 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-              selectedTerritory === 'penisola'
+              selectedTerritory !== 'all'
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 : 'bg-slate-50 text-slate-800 focus:bg-white'
             }`}
@@ -481,6 +533,8 @@ export const Filters: React.FC<FiltersProps> = ({
             Mostrando <strong className="text-slate-900">{totalResults}</strong> impianti
             {selectedTerritory === 'penisola' ? (
               <span className="text-sky-800 font-bold"> in Penisola Sorrentina</span>
+            ) : selectedTerritory === 'amalfitana' ? (
+              <span className="text-amber-800 font-bold"> in Costiera Amalfitana</span>
             ) : selectedProvince !== 'all' ? (
               <span> in provincia di <strong>{selectedProvince}</strong></span>
             ) : (

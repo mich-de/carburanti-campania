@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { GasStation, FuelStats, FuelApiResponse } from '@/types/fuel';
 import { UserLocation, isInCampania } from '@/lib/geo';
 import { Header } from '@/components/Header';
@@ -136,7 +136,10 @@ export default function HomePage() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(36);
-  }, [selectedProvince, selectedFuel, selectedBrand, onlyUnder2, onlySelf, searchQuery]);
+  }, [selectedTerritory, selectedProvince, selectedFuel, selectedBrand, onlyUnder2, onlySelf, searchQuery]);
+
+  // Ogni richiesta GPS ha un numero: se nel frattempo il GPS è stato disattivato, la risposta in ritardo si ignora
+  const locateRequestRef = useRef(0);
 
   // Handle GPS location request
   const handleLocateMe = () => {
@@ -145,9 +148,11 @@ export default function HomePage() {
       return;
     }
 
+    const requestId = ++locateRequestRef.current;
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (requestId !== locateRequestRef.current) return;
         const coords: UserLocation = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
@@ -158,6 +163,7 @@ export default function HomePage() {
         setIsLocating(false);
       },
       (err) => {
+        if (requestId !== locateRequestRef.current) return;
         console.warn('Geolocation error:', err);
         setIsLocating(false);
         alert('Impossibile rilevare la posizione GPS. Verifica i permessi del browser.');
@@ -169,12 +175,16 @@ export default function HomePage() {
 
   // Posizione scelta a mano toccando la mappa: serve quando il GPS del dispositivo sbaglia
   const handlePickLocation = (lat: number, lng: number) => {
+    locateRequestRef.current++;
+    setIsLocating(false);
     setUserLocation({ lat, lng, manual: true });
     setSortByDistance(true);
   };
 
-  // Rimuove la posizione: senza posizione non ci sono distanze né ordinamento per vicinanza
+  // Disattiva la posizione (GPS o scelta a mano): spariscono distanze e ordinamento per vicinanza
   const handleClearLocation = () => {
+    locateRequestRef.current++;
+    setIsLocating(false);
     setUserLocation(null);
     setSortByDistance(false);
   };
@@ -232,7 +242,12 @@ export default function HomePage() {
       />
 
       {/* 2. News Banner referring to Il Sole 24 Ore, inSella and MIMIT */}
-      <NewsBanner onLocateMe={handleLocateMe} isLocating={isLocating} locationActive={userLocation !== null} />
+      <NewsBanner
+        onLocateMe={handleLocateMe}
+        onClearLocation={handleClearLocation}
+        isLocating={isLocating}
+        locationActive={userLocation !== null}
+      />
 
       {/* 2b. Dual Source Architecture Status Bar: dettagli da tablet in su; su smartphone resta la fonte attiva */}
       <div className="bg-slate-100/90 border-b border-slate-200/80 py-2 px-4 text-xs text-slate-600">
@@ -275,6 +290,10 @@ export default function HomePage() {
         <Filters
           selectedTerritory={selectedTerritory}
           onTerritoryChange={setSelectedTerritory}
+          territoryCounts={{
+            penisola: stats?.byProvince['PENISOLA_SORRENTINA']?.total,
+            amalfitana: stats?.byProvince['COSTIERA_AMALFITANA']?.total,
+          }}
           selectedProvince={selectedProvince}
           onProvinceChange={setSelectedProvince}
           selectedFuel={selectedFuel}
@@ -444,11 +463,18 @@ export default function HomePage() {
             {viewMode === 'map' && (
               <StationMap
                 stations={processedStations}
-                selectedProvince={selectedTerritory === 'penisola' ? 'PENISOLA_SORRENTINA' : selectedProvince}
+                selectedProvince={
+                  selectedTerritory === 'penisola'
+                    ? 'PENISOLA_SORRENTINA'
+                    : selectedTerritory === 'amalfitana'
+                    ? 'COSTIERA_AMALFITANA'
+                    : selectedProvince
+                }
                 userLocation={userLocation}
                 searchQuery={searchQuery}
                 isLocating={isLocating}
                 onLocateMe={handleLocateMe}
+                onClearLocation={handleClearLocation}
                 onPickLocation={handlePickLocation}
               />
             )}

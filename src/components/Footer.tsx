@@ -39,6 +39,16 @@ export const Footer: React.FC = () => {
             </a>
             <span>•</span>
             <a
+              href="https://www.istat.it/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-emerald-700 transition flex items-center gap-1"
+            >
+              <span>Confini ISTAT (CC BY 4.0)</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+            <span>•</span>
+            <a
               href="https://www.ilsole24ore.com/art/caro-carburante-eni-anche-ip-fa-scattare-sconti-ecco-quanto-si-puo-risparmiare-AJBhWzQB"
               target="_blank"
               rel="noopener noreferrer"

@@ -5,11 +5,17 @@ import { Newspaper, ChevronDown, ChevronUp, ExternalLink, ShieldCheck, CheckCirc
 
 interface NewsBannerProps {
   onLocateMe?: () => void;
+  onClearLocation?: () => void;
   isLocating?: boolean;
   locationActive?: boolean;
 }
 
-export const NewsBanner: React.FC<NewsBannerProps> = ({ onLocateMe, isLocating = false, locationActive = false }) => {
+export const NewsBanner: React.FC<NewsBannerProps> = ({
+  onLocateMe,
+  onClearLocation,
+  isLocating = false,
+  locationActive = false,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -73,6 +79,15 @@ export const NewsBanner: React.FC<NewsBannerProps> = ({ onLocateMe, isLocating =
             >
               {isLocating ? 'Rilevamento…' : locationActive ? 'Aggiorna posizione' : 'Attiva GPS'}
             </button>
+            {locationActive && onClearLocation && (
+              <button
+                type="button"
+                onClick={onClearLocation}
+                className="inline-flex items-center min-h-9 px-3 py-1.5 rounded-lg border border-sky-300 bg-white hover:bg-sky-50 text-sky-900 text-xs font-bold shadow-sm transition active:scale-95"
+              >
+                Disattiva GPS
+              </button>
+            )}
           </div>
         )}
 

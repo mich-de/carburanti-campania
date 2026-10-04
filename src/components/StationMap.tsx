@@ -6,9 +6,11 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet-rotate';
-import { Crosshair, Focus, LocateFixed, Maximize2, Minimize2, Navigation, RotateCw } from 'lucide-react';
+import type { Feature, FeatureCollection } from 'geojson';
+import { Crosshair, Focus, LocateFixed, LocateOff, Maximize2, Minimize2, Navigation, RotateCw } from 'lucide-react';
 import { GasStation } from '../types/fuel';
 import { CAMPANIA_BOUNDS, UserLocation, formatDistanceMeters } from '../lib/geo';
+import confini from '../data/campania-confini.json';
 
 interface StationMapProps {
   stations: GasStation[];
@@ -17,12 +19,14 @@ interface StationMapProps {
   searchQuery?: string;
   isLocating?: boolean;
   onLocateMe?: () => void;
+  onClearLocation?: () => void;
   onPickLocation?: (lat: number, lng: number) => void;
 }
 
 const PROVINCE_CENTERS: Record<string, [number, number, number]> = {
   all: [40.85, 14.65, 9], // Center of Campania
   PENISOLA_SORRENTINA: [40.645, 14.415, 12], // Penisola Sorrentina: Vico Equense, Meta, Sorrento, Massa Lubrense
+  COSTIERA_AMALFITANA: [40.65, 14.605, 12], // Costiera Amalfitana: da Positano a Vietri sul Mare
   NA: [40.85, 14.26, 11],
   SA: [40.68, 14.76, 10],
   CE: [41.07, 14.33, 11],
@@ -30,10 +34,49 @@ const PROVINCE_CENTERS: Record<string, [number, number, number]> = {
   BN: [41.13, 14.78, 11],
 };
 
+// Le due costiere si inquadrano con un riquadro: la mappa lo adatta allo schermo, verticale od orizzontale
+const AREA_BOUNDS: Record<string, L.LatLngBoundsExpression> = {
+  PENISOLA_SORRENTINA: [
+    [40.56, 14.31],
+    [40.7, 14.47],
+  ],
+  COSTIERA_AMALFITANA: [
+    [40.6, 14.46],
+    [40.73, 14.75],
+  ],
+};
+
 // Con lo zoom indietro e lo spostamento la mappa resta sulla Campania
 const CAMPANIA = L.latLngBounds(CAMPANIA_BOUNDS);
 // Un cerchio di precisione più grande della mappa non serve: oltre questo valore non viene disegnato
 const MAX_ACCURACY_CIRCLE_M = 5000;
+
+// Colori delle province: gli stessi dei badge provincia nelle schede (NA blu, SA ambra, CE verde, AV viola, BN rosa)
+const PROVINCE_STYLE: Record<string, { fill: string; text: string; name: string }> = {
+  NA: { fill: '#3b82f6', text: '#1e40af', name: 'Napoli' },
+  SA: { fill: '#f59e0b', text: '#92400e', name: 'Salerno' },
+  CE: { fill: '#10b981', text: '#065f46', name: 'Caserta' },
+  AV: { fill: '#a855f7', text: '#6b21a8', name: 'Avellino' },
+  BN: { fill: '#f43f5e', text: '#9f1239', name: 'Benevento' },
+};
+// Da questo zoom in su le tinte delle province sbiadiscono e i nomi spariscono: in città contano le strade
+const DETAIL_ZOOM = 13;
+
+// Confini ISTAT (1 gennaio 2026, via geojson-italy), semplificati a 100 m e inclusi nel progetto: nessuna chiamata di rete
+const BOUNDARIES = confini as unknown as FeatureCollection;
+// Credito breve per stare su una riga anche sui telefoni: quello completo (CC BY 4.0) è nel piè di pagina
+const BOUNDARY_ATTRIBUTION = 'Confini © <a href="https://www.istat.it/">ISTAT</a>';
+
+const boundariesOf = (level: string): FeatureCollection => ({
+  type: 'FeatureCollection',
+  features: BOUNDARIES.features.filter((f) => f.properties?.livello === level),
+});
+
+const provinceFill = (feature: Feature | undefined, detail: boolean): L.PathOptions => ({
+  stroke: false,
+  fillColor: PROVINCE_STYLE[feature?.properties?.prov_acr]?.fill ?? '#94a3b8',
+  fillOpacity: detail ? 0.04 : 0.1,
+});
 
 // Prezzo minimo di ogni marcatore e presenza di un prezzo sotto 2 €: servono ai cluster per riassumere il gruppo
 const markerStats = new WeakMap<L.Marker, { minPrice: number; underTwo: boolean }>();
@@ -128,6 +171,7 @@ const btnBase =
   'flex h-11 w-11 items-center justify-center rounded-xl shadow-md border transition active:scale-95 disabled:opacity-60';
 const btnNormal = `${btnBase} bg-white border-slate-200 text-slate-700`;
 const btnSky = `${btnBase} bg-white border-slate-200 text-sky-700`;
+const btnSkyActive = `${btnBase} bg-sky-600 border-sky-600 text-white`;
 const btnPicking = `${btnBase} bg-amber-100 border-amber-400 text-amber-900`;
 
 export const StationMap: React.FC<StationMapProps> = ({
@@ -137,6 +181,7 @@ export const StationMap: React.FC<StationMapProps> = ({
   searchQuery,
   isLocating,
   onLocateMe,
+  onClearLocation,
   onPickLocation,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -191,6 +236,54 @@ export const StationMap: React.FC<StationMapProps> = ({
       maxZoom: 19,
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
+
+    // Confini: tinta tenue per provincia, tratteggio tra province, linea marcata con alone bianco per la regione.
+    // Non sono interattivi: tocchi e clic passano alla mappa e ai distributori
+    const provinces = L.geoJSON(boundariesOf('provincia'), {
+      interactive: false,
+      style: (f) => provinceFill(f, false),
+    }).addTo(map);
+    L.geoJSON(boundariesOf('confine-interno'), {
+      interactive: false,
+      style: { color: '#475569', weight: 1.3, opacity: 0.8, dashArray: '6 4' },
+    }).addTo(map);
+    L.geoJSON(boundariesOf('regione'), {
+      interactive: false,
+      style: { color: '#ffffff', weight: 6, opacity: 0.85, fill: false },
+    }).addTo(map);
+    L.geoJSON(boundariesOf('regione'), {
+      interactive: false,
+      attribution: BOUNDARY_ATTRIBUTION,
+      style: { color: '#0f172a', weight: 2.5, opacity: 0.9, fill: false },
+    }).addTo(map);
+
+    // Nomi delle province, sotto i marcatori dei distributori
+    const provinceLabels = L.layerGroup(
+      boundariesOf('provincia').features.map((f) => {
+        const p = f.properties as { prov_acr: string; labelLat: number; labelLng: number };
+        const style = PROVINCE_STYLE[p.prov_acr];
+        return L.marker([p.labelLat, p.labelLng], {
+          icon: L.divIcon({
+            className: 'province-label-icon',
+            html: `<span class="province-label" style="color:${style?.text ?? '#334155'}">${style?.name ?? p.prov_acr}</span>`,
+            iconSize: [140, 18],
+            iconAnchor: [70, 9],
+          }),
+          interactive: false,
+          keyboard: false,
+          zIndexOffset: -1000,
+        });
+      })
+    );
+
+    const applyZoomStyle = () => {
+      const detail = map.getZoom() >= DETAIL_ZOOM;
+      provinces.setStyle((f) => provinceFill(f, detail));
+      if (detail) provinceLabels.remove();
+      else if (!map.hasLayer(provinceLabels)) provinceLabels.addTo(map);
+    };
+    map.on('zoomend', applyZoomStyle);
+    applyZoomStyle();
 
     const cluster = L.markerClusterGroup({
       showCoverageOnHover: false,
@@ -265,6 +358,11 @@ export const StationMap: React.FC<StationMapProps> = ({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    const area = AREA_BOUNDS[selectedProvince];
+    if (area) {
+      map.fitBounds(area, { padding: [12, 12] });
+      return;
+    }
     const [lat, lng, zoom] = PROVINCE_CENTERS[selectedProvince] || PROVINCE_CENTERS.all;
     map.setView([lat, lng], zoomFor(zoom));
   }, [selectedProvince]);
@@ -421,7 +519,7 @@ export const StationMap: React.FC<StationMapProps> = ({
         )}
       </div>
 
-      {/* In basso a destra: posizione GPS e posizione scelta a mano */}
+      {/* In basso a destra: posizione GPS, disattivazione e posizione scelta a mano (servono anche a schermo intero) */}
       <div className="absolute bottom-10 right-3 z-[1000] flex flex-col gap-2">
         {onLocateMe && (
           <button
@@ -430,9 +528,20 @@ export const StationMap: React.FC<StationMapProps> = ({
             disabled={isLocating}
             aria-label="Centra la mappa sulla mia posizione"
             title="Dove sono"
-            className={btnSky}
+            className={userLocation ? btnSkyActive : btnSky}
           >
             <LocateFixed className={`w-5 h-5 ${isLocating ? 'animate-spin' : ''}`} />
+          </button>
+        )}
+        {userLocation && onClearLocation && (
+          <button
+            type="button"
+            onClick={onClearLocation}
+            aria-label="Disattiva la posizione"
+            title="Disattiva posizione"
+            className={btnNormal}
+          >
+            <LocateOff className="w-5 h-5" />
           </button>
         )}
         <button
@@ -453,8 +562,8 @@ export const StationMap: React.FC<StationMapProps> = ({
         </div>
       )}
 
-      {/* Legenda: su smartphone va a capo e lascia libera la colonna dei pulsanti */}
-      <div className="absolute bottom-3 left-3 right-16 sm:right-auto z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-200 shadow-md text-[11px] sm:text-xs text-slate-700 font-medium">
+      {/* Legenda: su smartphone va a capo, lascia libera la colonna dei pulsanti e sta sopra la riga dei crediti */}
+      <div className="absolute bottom-7 sm:bottom-3 left-3 right-16 sm:right-auto z-[1000] flex flex-wrap items-center gap-x-3 gap-y-1 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-200 shadow-md text-[11px] sm:text-xs text-slate-700 font-medium">
         <span className="whitespace-nowrap"><span className="font-bold text-emerald-700">Verde:</span> &lt; 2.00 €</span>
         <span className="whitespace-nowrap"><span className="font-bold text-amber-600">Giallo:</span> Eni</span>
         <span className="whitespace-nowrap"><span className="font-bold text-sky-600">Blu:</span> IP</span>

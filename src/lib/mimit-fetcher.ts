@@ -1,21 +1,84 @@
 import { GasStation, FuelPrice, FuelType, FuelStats, ActiveDataSource } from '../types/fuel';
+import { distanceFromProvinceKm } from './campania-boundaries';
 
 const CAMPANIA_PROVINCES = new Set(['NA', 'SA', 'CE', 'AV', 'BN']);
 
+// Nomi normalizzati: maiuscole, senza accenti, apostrofi come spazi ("SANT'AGNELLO" → "SANT AGNELLO")
 export const PENISOLA_SORRENTINA_TOWNS = new Set([
   'MASSA LUBRENSE',
   'SORRENTO',
-  "SANT'AGNELLO",
   'SANT AGNELLO',
   'PIANO DI SORRENTO',
   'META',
   'VICO EQUENSE',
 ]);
 
+// I 13 comuni della Costiera Amalfitana, tutti in provincia di Salerno
+export const COSTIERA_AMALFITANA_TOWNS = new Set([
+  'POSITANO',
+  'PRAIANO',
+  'FURORE',
+  'CONCA DEI MARINI',
+  'AMALFI',
+  'ATRANI',
+  'RAVELLO',
+  'SCALA',
+  'MINORI',
+  'MAIORI',
+  'TRAMONTI',
+  'CETARA',
+  'VIETRI SUL MARE',
+]);
+
+// Nel campo città MIMIT può esserci anche CAP o località ("KM.2+180 - LOCALITA' VECITE 84010 - MAIORI"):
+// il comune è la parte dopo l'ultimo " - "
+function comuneOf(city: string): string {
+  const norm = city
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toUpperCase()
+    .replace(/['’`]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const sep = norm.lastIndexOf(' - ');
+  return sep >= 0 ? norm.slice(sep + 3).trim() : norm;
+}
+
 export function isPenisolaSorrentina(city: string): boolean {
-  if (!city) return false;
-  const norm = city.trim().toUpperCase();
-  return PENISOLA_SORRENTINA_TOWNS.has(norm);
+  return !!city && PENISOLA_SORRENTINA_TOWNS.has(comuneOf(city));
+}
+
+export function isCostieraAmalfitana(city: string): boolean {
+  return !!city && COSTIERA_AMALFITANA_TOWNS.has(comuneOf(city));
+}
+
+// Chiavi delle aree costiere in cui ricade un comune (usate nelle statistiche per area)
+function territoryKeysOf(city: string): string[] {
+  const keys: string[] = [];
+  if (isPenisolaSorrentina(city)) keys.push('PENISOLA_SORRENTINA');
+  if (isCostieraAmalfitana(city)) keys.push('COSTIERA_AMALFITANA');
+  return keys;
+}
+
+// Coordinate più lontane di così dalla provincia dichiarata sono errori dei dati (es. un impianto di Sorrento
+// registrato a Ventimiglia): si scartano, l'impianto resta in elenco senza punto in mappa né distanza
+const MAX_KM_FROM_PROVINCE = 5;
+
+function sanitizeStationCoordinates(stations: GasStation[]): GasStation[] {
+  let rejected = 0;
+  const result = stations.map((st) => {
+    if (!st.latitude || !st.longitude) return st;
+    const km = distanceFromProvinceKm(st.latitude, st.longitude, st.province);
+    if (km === null || km <= MAX_KM_FROM_PROVINCE) return st;
+    rejected++;
+    return { ...st, latitude: 0, longitude: 0, coordsRejected: true };
+  });
+  if (rejected > 0) {
+    console.warn(
+      `[CampaniaGplDataSource] Coordinate scartate per ${rejected} impianti: oltre ${MAX_KM_FROM_PROVINCE} km dalla provincia dichiarata`
+    );
+  }
+  return result;
 }
 
 // Fonte Primaria: API Osservaprezzi Carburanti
@@ -707,13 +770,14 @@ export async function fetchCampaniaFuelData(forceRefresh = false): Promise<{
   // 1. Tenta la FONTE PRIMARIA: API Osservaprezzi Carburanti
   const primaryResult = await fetchFromOsservaprezziApi();
   if (primaryResult && primaryResult.stations.length > 0) {
-    const stats = calculateCampaniaStats(primaryResult.stations, primaryResult.extractionDate);
+    const stations = sanitizeStationCoordinates(primaryResult.stations);
+    const stats = calculateCampaniaStats(stations, primaryResult.extractionDate);
     const activeSource: ActiveDataSource = 'PRIMARY_OSSERVAPREZZI_API';
     const sourceDescription = 'API Osservaprezzi Carburanti (carburanti.mise.gov.it/ospzApi)';
 
     memoryCache = {
       timestamp: now,
-      data: primaryResult.stations,
+      data: stations,
       stats,
       rawDate: primaryResult.extractionDate,
       activeSource,
@@ -721,7 +785,7 @@ export async function fetchCampaniaFuelData(forceRefresh = false): Promise<{
     };
 
     return {
-      stations: primaryResult.stations,
+      stations,
       stats,
       activeSource,
       sourceDescription,
@@ -733,13 +797,14 @@ export async function fetchCampaniaFuelData(forceRefresh = false): Promise<{
   // 2. FONTE SECONDARIA: Open Data MIMIT CSV Fallback
   try {
     const fallbackResult = await fetchFromMimitCsvFallback();
-    const stats = calculateCampaniaStats(fallbackResult.stations, fallbackResult.extractionDate);
+    const stations = sanitizeStationCoordinates(fallbackResult.stations);
+    const stats = calculateCampaniaStats(stations, fallbackResult.extractionDate);
     const activeSource: ActiveDataSource = 'SECONDARY_MIMIT_CSV_FALLBACK';
     const sourceDescription = 'Open Data MIMIT CSV (mimit.gov.it/images/exportCSV)';
 
     memoryCache = {
       timestamp: now,
-      data: fallbackResult.stations,
+      data: stations,
       stats,
       rawDate: fallbackResult.extractionDate,
       activeSource,
@@ -747,7 +812,7 @@ export async function fetchCampaniaFuelData(forceRefresh = false): Promise<{
     };
 
     return {
-      stations: fallbackResult.stations,
+      stations,
       stats,
       activeSource,
       sourceDescription,
@@ -802,6 +867,7 @@ function calculateCampaniaStats(stations: GasStation[], extractionDate: string):
     AV: { total: 0, under2Euro: 0 },
     BN: { total: 0, under2Euro: 0 },
     PENISOLA_SORRENTINA: { total: 0, under2Euro: 0 },
+    COSTIERA_AMALFITANA: { total: 0, under2Euro: 0 },
   };
 
   for (const st of stations) {
@@ -809,19 +875,12 @@ function calculateCampaniaStats(stations: GasStation[], extractionDate: string):
       stationsUnder2Euro++;
     }
 
-    const prov = st.province;
-    if (byProvince[prov]) {
-      byProvince[prov].total++;
+    // Ogni impianto conta per la sua provincia e per l'eventuale area costiera (Penisola Sorrentina, Costiera Amalfitana)
+    const areas = [st.province, ...territoryKeysOf(st.city)].filter((key) => byProvince[key]);
+    for (const key of areas) {
+      byProvince[key].total++;
       if (st.hasUnder2Euro) {
-        byProvince[prov].under2Euro++;
-      }
-    }
-
-    const isPen = isPenisolaSorrentina(st.city);
-    if (isPen) {
-      byProvince.PENISOLA_SORRENTINA.total++;
-      if (st.hasUnder2Euro) {
-        byProvince.PENISOLA_SORRENTINA.under2Euro++;
+        byProvince[key].under2Euro++;
       }
     }
 
@@ -830,14 +889,9 @@ function calculateCampaniaStats(stations: GasStation[], extractionDate: string):
         benzinaSelfCount++;
         benzinaSelfSum += pr.price;
         if (pr.price < minBenzinaSelf) minBenzinaSelf = pr.price;
-        if (byProvince[prov]) {
-          if (!byProvince[prov].minBenzina || pr.price < byProvince[prov].minBenzina!) {
-            byProvince[prov].minBenzina = pr.price;
-          }
-        }
-        if (isPen) {
-          if (!byProvince.PENISOLA_SORRENTINA.minBenzina || pr.price < byProvince.PENISOLA_SORRENTINA.minBenzina!) {
-            byProvince.PENISOLA_SORRENTINA.minBenzina = pr.price;
+        for (const key of areas) {
+          if (!byProvince[key].minBenzina || pr.price < byProvince[key].minBenzina!) {
+            byProvince[key].minBenzina = pr.price;
           }
         }
       }
@@ -845,14 +899,9 @@ function calculateCampaniaStats(stations: GasStation[], extractionDate: string):
         gasolioSelfCount++;
         gasolioSelfSum += pr.price;
         if (pr.price < minGasolioSelf) minGasolioSelf = pr.price;
-        if (byProvince[prov]) {
-          if (!byProvince[prov].minGasolio || pr.price < byProvince[prov].minGasolio!) {
-            byProvince[prov].minGasolio = pr.price;
-          }
-        }
-        if (isPen) {
-          if (!byProvince.PENISOLA_SORRENTINA.minGasolio || pr.price < byProvince.PENISOLA_SORRENTINA.minGasolio!) {
-            byProvince.PENISOLA_SORRENTINA.minGasolio = pr.price;
+        for (const key of areas) {
+          if (!byProvince[key].minGasolio || pr.price < byProvince[key].minGasolio!) {
+            byProvince[key].minGasolio = pr.price;
           }
         }
       }

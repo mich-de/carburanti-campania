@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchCampaniaFuelData, isPenisolaSorrentina } from '@/lib/mimit-fetcher';
+import { fetchCampaniaFuelData, isPenisolaSorrentina, isCostieraAmalfitana } from '@/lib/mimit-fetcher';
 import { GasStation, FuelApiResponse } from '@/types/fuel';
 
 export const dynamic = 'force-dynamic';
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const provincia = searchParams.get('provincia') || 'all';
-    const territorio = searchParams.get('territorio') || 'all'; // 'all' | 'penisola'
+    const territorio = searchParams.get('territorio') || 'all'; // 'all' | 'penisola' | 'amalfitana'
     const carburante = searchParams.get('carburante') || 'all';
     const brand = searchParams.get('brand') || 'all';
     const onlyUnder2 = searchParams.get('onlyUnder2') === 'true'; // Tutti i marchi < 2.00 € (incluse Pompe Bianche)
@@ -79,9 +79,11 @@ export async function GET(request: NextRequest) {
 
     let filtered: GasStation[] = stations;
 
-    // Filter by Territorio (Penisola Sorrentina) or Province
+    // Filter by Territorio (Penisola Sorrentina, Costiera Amalfitana) or Province
     if (territorio === 'penisola' || provincia === 'PENISOLA_SORRENTINA') {
       filtered = filtered.filter((s) => isPenisolaSorrentina(s.city));
+    } else if (territorio === 'amalfitana' || provincia === 'COSTIERA_AMALFITANA') {
+      filtered = filtered.filter((s) => isCostieraAmalfitana(s.city));
     } else if (provincia !== 'all') {
       const pUpper = provincia.toUpperCase();
       filtered = filtered.filter((s) => s.province === pUpper);
