@@ -1,0 +1,15 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "headers": [
+    {
+      "source": "/api/fuel",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=900, stale-while-revalidate=1800"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+# TASKS: Monitoraggio Prezzi Carburanti Campania (< 2.00 €)
+
+## Roadmap & Attività Correnti
+
+### [DEVOPS] Setup Ambiente e Configurazione
+- [x] Inizializzazione Git con identity (`mich-de`, `mic.deangelis@gmail.com`)
+- [x] Creazione `package.json`, `tsconfig.json`, `tailwind.config.js`, `postcss.config.js`
+- [x] Installazione dipendenze Next.js, React, Tailwind, Lucide, Leaflet
+- [x] Configurazione Vercel (`vercel.json`, Next config)
+- [x] Verifica build di produzione (`npm run build`) superata con successo
+
+### [BACKEND] Data Ingestion & API Serverless
+- [x] Implementazione **Fonte Primaria**: API Osservaprezzi Carburanti (`carburanti.mise.gov.it/ospzApi/search/servicearea`) con 5 richieste parallele per le province campane (1.863 impianti campani in ~700ms)
+- [x] Garanzia **Zero-AI**: nessuna intelligenza artificiale o modello generativo altera o stima i dati, 100% derivati da MIMIT API e Open Data CSV ufficiali
+- [x] Implementazione **Fonte Secondaria**: Open Data MIMIT CSV Fallback (`mimit.gov.it/images/exportCSV/`)
+- [x] Orchestratore unificato `CampaniaGplDataSource` con fallback a cascata e persistenza in memoria (TTL 15 min)
+- [x] Filtro geolocalizzato esclusivo per le 5 province campane (NA, SA, CE, AV, BN)
+- [x] Regola di sanitizzazione: scarto o flag `N/D` per prezzi <= 0.0 e sentinelle test (conformità a `testo.txt`)
+- [x] Normalizzazione avanzata indirizzi MIMIT (rimozione CAP attaccati, espansione prefissi stradali come Corso Italia, Via delle Rose, Via dei Platani, Via Raffaele Bosco)
+- [x] Tabella di override geolocalizzata e verificata per tutti i 22 distributori della Penisola Sorrentina (coordinate esatte e toponomastica corretta)
+- [x] Cache serverless e HTTP header con TTL 15 minuti (`s-maxage=900`)
+- [x] Endpoint `/api/fuel` con supporto a query params (`provincia`, `carburante`, `onlyUnder2`, `brand`, `onlySelf`, `search`) e metadata su fonte attiva
+- [x] Calcolo statistiche di riepilogo regionali e provinciali
+
+### [FRONTEND] Dashboard & Interfaccia Utente
+- [x] Header moderno con badge live status, notizia Price Cap e ultimo aggiornamento MIMIT
+- [x] Summary KPI Cards (Distributori < 2€, Prezzo Min Benzina/Diesel, Medie e minimi regionali)
+- [x] Standardizzazione province reali della Campania (NA, SA, CE, AV, BN)
+- [x] Selettore territoriale in evidenza **"🌊 Penisola Sorrentina"** con segmented control estetico, badge 22 pompe, elenco dei 6 comuni costieri e centraggio automatico mappa
+- [x] Separazione netta dei filtri: **"Prezzo < 2.00 €"** (qualsiasi distributore) vs **"Accordo Price Cap"** (Grandi Reti Eni, IP, Q8, Esso)
+- [x] Badge distinti nelle schede e in classifica: `PRICE CAP < 2€` per i grandi marchi aderenti e `PREZZO < 2€` per le pompe indipendenti
+- [x] Default attivati all'avvio: **"Solo Self-service"** e **"Accordo Price Cap"** (Grandi Reti Eni, IP, Q8, Esso con prezzi calmierati < 2.00 €)
+- [x] Componente **Legenda** interattiva per simboli, listini multipli e colori brand
+- [x] Ricerca intelligente senza falsi positivi (boundary match per "Meta", esclusione da "Metanauto" in operatore e nome, feedback esplicito con pulsante di reset filtri)
+- [x] Vista Card Impianto (dettaglio prezzi, bandiera, indicatore distanza, navigatore Google Maps)
+- [x] Vista Tabellare comparativa / classifica
+- [x] Mappa interattiva Leaflet con pin personalizzati per brand e badge prezzo sotto 2€
+- [x] Risoluzione `ChunkLoadError` di Leaflet tramite `next/dynamic` client-only SSR false e strict typing
+- [x] Banner informativo con approfondimento sull'articolo de *Il Sole 24 Ore* (Price Cap Eni, IP, Q8)
+- [x] Responsive layout completo per smartphone e desktop

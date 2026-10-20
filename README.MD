@@ -1,0 +1,89 @@
+# ⛽ Campania Carburanti Price Cap Monitor (< 2.00 €)
+
+Applicazione web moderna sviluppata in **Next.js** per monitorare in tempo reale i distributori di carburante in **Campania** che offrono prezzi inferiori a **2,00 € al litro**, conformemente al price cap introdotto dai grandi operatori (Eni, IP, Q8) come riportato da *Il Sole 24 Ore*.
+
+- 🌐 **Sito Live in Produzione:** [https://carburanti-campania.vercel.app](https://carburanti-campania.vercel.app) (alias: [https://web-carburanti.vercel.app](https://web-carburanti.vercel.app))
+- 📦 **Repository GitHub:** [https://github.com/mich-de/carburanti-campania](https://github.com/mich-de/carburanti-campania)
+- 🏢 **Team Vercel:** `micheles-projects-863019a6/carburanti-campania`
+
+---
+
+## 🌟 Caratteristiche Principali
+
+- 🎯 **Esclusivo per la Campania:** Copertura capillare delle 5 province campane (**Napoli**, **Salerno**, **Caserta**, **Avellino**, **Benevento**), con ricerca toponomastica avanzata e coordinate GPS verificate per tutti i comuni (inclusi Sorrento, Massa Lubrense, Sant'Agnello, Piano di Sorrento, Meta, Vico Equense).
+- 💰 **Monitor Price Cap (< 2.00 €):** Evidenzia con precisione i distributori che applicano lo sconto e il tetto a Benzina e Gasolio, escludendo GPL e Metano per non falsare le statistiche.
+- ⚡ **Dati Ufficiali MIMIT in Tempo Reale:** Ingestion diretta dei flussi aperti del Ministero delle Imprese e del Made in Italy (Osservaprezzi Carburanti).
+- ⏱️ **Cache Intelligente (TTL 15 min):** Prestazioni istantanee conformi alle specifiche di rate limiting e risparmio banda.
+- 🗺️ **Mappa Interattiva OpenStreetMap:** Visualizza tutti gli impianti geolocalizzati sulla mappa con Leaflet e pin personalizzati per brand e prezzo, con il confine della Campania e le 5 province colorate e con il nome.
+- 🌊 **Penisola Sorrentina e 🍋 Costiera Amalfitana:** Filtri rapidi per i 6 comuni della Penisola Sorrentina e i 13 della Costiera Amalfitana (Positano, Praiano, Furore, Conca dei Marini, Amalfi, Atrani, Ravello, Scala, Minori, Maiori, Tramonti, Cetara, Vietri sul Mare).
+- 🧭 **Coordinate verificate:** Se le coordinate MIMIT di un impianto distano più di 5 km dalla sua provincia, vengono scartate: l'impianto resta in elenco ma non compare in mappa, non ha distanza e la navigazione usa l'indirizzo.
+- 📍 **Geolocalizzazione GPS "Vicino a Me":** Rileva la posizione del dispositivo (come raccomandato dalla guida di *inSella*), calcola la distanza in km in locale (formula Haversine) e ordina all'istante i distributori più vicini.
+- 🔍 **Filtri Avanzati & Ricerca:** Filtra per provincia, marchio (Eni, IP, Q8, Pompe Bianche), tipo carburante e modalità Self/Servito.
+- 📱 **Mobile First & Navigazione GPS Integrata:** Ciascuna scheda impianto include il pulsante diretto per aprire l'itinerario in Google Maps o Apple Mappe.
+
+---
+
+## 🚀 Come Installare ed Eseguire in Locale
+
+### Prerequisiti
+- **Node.js** v18+ (testato con v25.2.0)
+- **npm** oppure **pnpm**
+
+### Installazione
+```bash
+# Installa le dipendenze
+npm install
+```
+
+### Avvio in Sviluppo
+```bash
+npm run dev
+```
+L'applicazione sarà disponibile su `http://localhost:7777`.
+
+### Build di Produzione
+```bash
+npm run build
+npm run start
+```
+
+---
+
+## ☁️ Come Pubblicare su Vercel
+
+1. Fai il push del repository su GitHub:
+   ```bash
+   git add .
+   git commit -m "feat: initial commit - campania fuel price cap monitor"
+   git branch -M main
+   git remote add origin https://github.com/<tuo-utente>/<tuo-repo>.git
+   git push -u origin main
+   ```
+2. Vai su [vercel.com](https://vercel.com) e accedi con GitHub.
+3. Clicca su **Add New...** -> **Project**.
+4. Importa la repository `web-carburanti`.
+5. Mantieni il Framework Preset come **Next.js** e clicca su **Deploy**.
+6. In meno di 2 minuti il tuo sito sarà online su `https://<nome-progetto>.vercel.app`!
+
+---
+
+## 🏛️ Attribuzioni e Architettura Fonti Dati
+
+L'applicazione integra un'architettura a **doppia fonte ufficiale** con fallback automatico e cache a 15 minuti:
+
+1. **Fonte Primaria (Live):**
+   - **API Osservaprezzi Carburanti:** `https://carburanti.mise.gov.it/ospzApi/search/servicearea`
+   - Interroga in parallelo le 5 province campane (Napoli, Salerno, Caserta, Avellino, Benevento) in ~700ms.
+   - **Zero AI:** Dati al 100% ufficiali trasmessi direttamente dai gestori degli impianti, mai stimati o inventati.
+2. **Fonte Secondaria (Fallback Automatico):**
+   - **Open Data MIMIT CSV:** `https://www.mimit.gov.it/images/exportCSV/` (`anagrafica_impianti_attivi.csv` e `prezzo_alle_8.csv`).
+   - Si attiva in caso di timeout, rate limit o indisponibilità temporanea dell'endpoint primario.
+3. **Persistenza & Resilienza:**
+   - In caso di temporaneo blackout di rete di entrambe le fonti, il sistema mantiene in memoria l'ultimo dato reale valido verificato senza azzerare i listini.
+4. **Cartografia:**
+   - © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+   - Confini di regione e province: © [ISTAT](https://www.istat.it/), limiti amministrativi al 1° gennaio 2026, tramite [geojson-italy](https://github.com/openpolis/geojson-italy), licenza [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Semplificati a 100 m e inclusi nel repository (`src/data/campania-confini.json`): nessuna chiamata di rete aggiuntiva.
+5. **Articoli e Fonti Giornalistiche di Riferimento:**
+   - [Il Sole 24 Ore - Price Cap Eni, IP e Q8](https://www.ilsole24ore.com/art/caro-carburante-eni-anche-ip-fa-scattare-sconti-ecco-quanto-si-puo-risparmiare-AJBhWzQB)
+   - [inSella.it - È il giorno della benzina sotto i 2 euro: dove sono i distributori a prezzo scontato](https://www.insella.it/news/il-giorno-della-benzina-sotto-2-euro-dove-sono-distributori-prezzo-scontato-78577)
+   - [Portale Ministeriale Osservaprezzi MIMIT](https://carburanti.mise.gov.it/ospzSearch/zona)
